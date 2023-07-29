@@ -1,5 +1,3 @@
-extern crate sys;
-
 use std::sync::{Arc, Mutex};
 mod connections;
 mod input;
