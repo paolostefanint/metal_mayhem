@@ -1,0 +1,63 @@
+<!-- Import p5.js from CDN-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"> </script>
+
+<script>
+
+    const colors = [
+        [255, 0, 0],
+        [0, 255, 0],
+        [0, 0, 255],
+        [255, 255, 0],
+        [0, 255, 255],
+        [255, 0, 255],
+        [255, 255, 255],
+        [0, 0, 0],
+    ]
+
+    const SCALE =  20 
+    
+    const socket = new WebSocket('ws://localhost:42000');
+    let players = [];
+
+    socket.addEventListener('open', function (event) {
+
+    });
+
+    socket.addEventListener("message", (event) => {
+        // console.log(event.data);
+        players = JSON.parse(event.data);
+    });
+
+    function setup() {
+        
+        createCanvas(20 * SCALE, 20 * SCALE);
+
+    }
+    
+    function draw() {
+        background(51);
+
+        scale(SCALE)
+
+        for (let player of players.players) {
+            fill(colors[player.id % colors.length]);
+
+            noStroke()
+            ellipse(player.p[0], player.p[1], 1 , 1 );
+            // player.dir is an array with cos and sin of the angle
+            // Draw a line from the center of the player to the direction
+            stroke(0);
+            strokeWeight(0.3);
+            line(
+                player.p[0], 
+                player.p[1], 
+                player.p[0] + player.dir[0], 
+                player.p[1] + player.dir[1]
+            );
+        }
+    
+
+    }
+
+
+</script>
