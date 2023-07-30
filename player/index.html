@@ -39,6 +39,9 @@
 
         scale(SCALE)
 
+        try {
+            
+
         for (let player of players.players) {
             fill(colors[player.id % colors.length]);
 
@@ -54,6 +57,9 @@
                 player.p[0] + player.dir[0], 
                 player.p[1] + player.dir[1]
             );
+        }
+        } catch (err) {
+            console.error("Rendering error", err);
         }
     
 
