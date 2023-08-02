@@ -158,6 +158,8 @@ async fn main() {
     start_client_connections(world, rigid_body_set).await;
 
     // render_thread.join().unwrap();
-    physics_thread.join().unwrap();
-    input_thread.join().unwrap();
+    // physics_thread.join().unwrap();
+    // input_thread.join().unwrap();
+
+    loop {}
 }
