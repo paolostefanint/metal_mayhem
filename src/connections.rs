@@ -11,6 +11,7 @@ pub async fn start_client_connections(
     world: Arc<Mutex<GameWorld>>,
     rigid_body_set: Arc<Mutex<RigidBodySet>>,
 ) -> Result<(), Error> {
+    println!("Start client connections thread begin");
     let listener = TcpListener::bind("127.0.0.1:42000").await?;
 
     tokio::spawn(async move {

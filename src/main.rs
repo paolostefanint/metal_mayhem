@@ -7,7 +7,7 @@ mod render;
 mod world;
 
 use connections::start_client_connections;
-use input::start_input;
+use input::start_listening_websocket;
 use physics::{setup_world, start_physics_engine};
 use player::{create_player, Player, PlayerConfiguration};
 use render::start_render;
@@ -148,13 +148,15 @@ async fn main() {
     let world = world_arc.clone();
     let rigid_body_set = rigid_body_set_arc.clone();
 
-    let input_thread = start_input(world, rigid_body_set);
+    println!("Starting input thread");
+    let input_thread = start_listening_websocket(world, rigid_body_set).await;
 
     // WEBSOCKET CONNECTIONS
     //
     let world = world_arc.clone();
     let rigid_body_set = rigid_body_set_arc.clone();
 
+    println!("Starting websocket connections");
     start_client_connections(world, rigid_body_set).await;
 
     // render_thread.join().unwrap();
