@@ -1,5 +1,3 @@
-use rapier2d::prelude::*;
-
 use super::world::GameWorld;
 
 #[derive(Debug)]
@@ -10,25 +8,34 @@ pub struct Player {
     pub max_speed: f32,
     pub health: f32,
     pub size: f32,
+    pub position: (f32, f32),
     pub input: PlayerInputs,
-    pub body_handle: RigidBodyHandle,
+}
+
+impl Player {
+    pub fn tick(&mut self, delta_time: f32) {
+        let (x, y) = self.position;
+        let (mov_x, mov_y) = self.input.mov;
+        let speed = self.max_speed;
+        self.position = (
+            x + mov_x * speed * delta_time,
+            y + mov_y * speed * delta_time,
+        );
+        println!("player position tick: {:?}", self.position);
+    }
 }
 
 #[derive(Debug)]
 pub struct PlayerInputs {
-    pub up: bool,
-    pub down: bool,
-    pub left: bool,
-    pub right: bool,
+    pub mov: (f32, f32),
+    pub attack: bool,
 }
 
 impl PlayerInputs {
     pub fn new() -> PlayerInputs {
         PlayerInputs {
-            up: false,
-            down: false,
-            left: false,
-            right: false,
+            mov: (0.0, 0.0),
+            attack: false,
         }
     }
 }
@@ -37,57 +44,19 @@ pub struct PlayerConfiguration {
     pub player_id: u8,
     pub initial_position: (f32, f32),
     pub size: f32,
+    pub speed: f32,
 }
 
-fn create_player_physics(player_size: f32, player_position: (f32, f32)) -> (RigidBody, Collider) {
-    let player_body = RigidBodyBuilder::dynamic()
-        .translation(vector![player_position.0, player_position.1])
-        .build();
-    let player_collider = ColliderBuilder::ball(player_size).restitution(1.0).build();
-
-    return (player_body, player_collider);
-}
-
-fn add_player_to_world(
-    rigid_body_set: &mut RigidBodySet,
-    collider_set: &mut ColliderSet,
-    player_body: RigidBody,
-    player_collider: Collider,
-) -> RigidBodyHandle {
-    let player_body_handle = rigid_body_set.insert(player_body);
-    collider_set.insert_with_parent(player_collider, player_body_handle, rigid_body_set);
-    return player_body_handle;
-}
-
-fn create_game_player(
-    player_configuration: &PlayerConfiguration,
-    player_body_handle: RigidBodyHandle,
-) -> Player {
+pub fn create_player(player_configuration: &PlayerConfiguration, world: &mut GameWorld) -> Player {
     let player = Player {
         id: player_configuration.player_id,
         attack: 0.0,
         defense: 0.0,
-        max_speed: 0.0,
+        max_speed: player_configuration.speed,
         health: 0.0,
         size: 0.0,
+        position: player_configuration.initial_position,
         input: PlayerInputs::new(),
-        body_handle: player_body_handle,
     };
-    return player;
-}
-
-pub fn create_player(
-    player_configuration: &PlayerConfiguration,
-    world: &mut GameWorld,
-    rigid_body_set: &mut RigidBodySet,
-    collider_set: &mut ColliderSet,
-) -> Player {
-    let (player_body, player_collider) = create_player_physics(
-        player_configuration.size,
-        player_configuration.initial_position,
-    );
-    let player_body_handle =
-        add_player_to_world(rigid_body_set, collider_set, player_body, player_collider);
-    let player = create_game_player(player_configuration, player_body_handle);
     return player;
 }

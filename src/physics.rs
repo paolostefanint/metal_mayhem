@@ -2,33 +2,15 @@ use super::world::GameWorld;
 use rapier2d::prelude::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-pub fn setup_world(world_size: (f32, f32)) -> (GameWorld, RigidBodySet, ColliderSet) {
-    let rigid_body_set = RigidBodySet::new();
-    let mut collider_set = ColliderSet::new();
-
+pub fn setup_world(world_size: (f32, f32)) -> GameWorld {
     let mut world = GameWorld {
+        current_time: Instant::now(),
         size: world_size,
         players: Vec::new(),
     };
-
-    /* Create the box. */
-    let top_collider = ColliderBuilder::cuboid(world_size.1, 1.0).build();
-    let bottom_collider = ColliderBuilder::cuboid(world_size.1, 1.0)
-        .translation(vector![-1.0, world_size.1])
-        .build();
-    let left_collider = ColliderBuilder::cuboid(0.0, world_size.1).build();
-    let right_collider = ColliderBuilder::cuboid(0.0, world_size.1)
-        .translation(vector![world_size.1, 0.0])
-        .build();
-    collider_set.insert(top_collider);
-    collider_set.insert(bottom_collider);
-    collider_set.insert(left_collider);
-    collider_set.insert(right_collider);
-    // end of box
-
-    return (world, rigid_body_set, collider_set);
+    return world;
 }
 
 pub fn start_physics_engine(

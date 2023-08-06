@@ -25,7 +25,9 @@
 
     socket.addEventListener("message", (event) => {
         // console.log(event.data);
+        console.time("parse");
         players = JSON.parse(event.data);
+        console.timeEnd("parse"); 
     });
 
     function setup() {
@@ -42,22 +44,12 @@
         try {
             
 
-        for (let player of players.players) {
-            fill(colors[player.id % colors.length]);
+            for (let player of players.players) {
+                fill(colors[player.id % colors.length]);
 
-            noStroke()
-            ellipse(player.p[0], player.p[1], 1 , 1 );
-            // player.dir is an array with cos and sin of the angle
-            // Draw a line from the center of the player to the direction
-            stroke(0);
-            strokeWeight(0.3);
-            line(
-                player.p[0], 
-                player.p[1], 
-                player.p[0] + player.dir[0], 
-                player.p[1] + player.dir[1]
-            );
-        }
+                noStroke()
+                ellipse(player.p[0], player.p[1], 1 , 1 );
+            }
         } catch (err) {
             console.error("Rendering error", err);
         }

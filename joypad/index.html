@@ -1,0 +1,78 @@
+<DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Websocket</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <!-- Import p5.js from CDN-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"> </script>
+
+    <script>
+        let socketIsConnected = false;
+
+        const canvasSize = 400;
+        
+        const socket = new WebSocket('ws://localhost:40020');
+        let players = [];
+
+        socket.addEventListener('open', function (event) {
+            console.log('Connected to WS Server');
+            socketIsConnected = true;
+        });
+
+        socket.addEventListener("message", (event) => {
+            // console.log(event.data);
+            // players = JSON.parse(event.data);
+        });
+
+        function setup() {
+            
+            createCanvas(canvasSize, canvasSize);
+
+        }
+        
+        function draw() {
+            background(51);
+
+            stroke(255);
+            if (mouseIsPressed) {
+
+                
+                line(mouseX, mouseY, canvasSize / 2, canvasSize / 2);
+                // find and normalize the vector between the mouse and the center
+
+                const x = mouseX - canvasSize / 2;
+                const y = mouseY - canvasSize / 2;
+
+                const mag = Math.sqrt(x * x + y * y);
+                const normX = x / mag;
+                const normY = y / mag;
+
+
+                const data = `1|${normX}:${normY}|0` 
+                send(data);
+            } else {
+                const data = `0|0:0|0` 
+               send(data);
+            }
+        
+
+        }
+
+        function send(data) {
+           if (socketIsConnected) {
+                socket.send(data);
+           } 
+        }
+
+
+    </script>
+</head>
+<body>
+    </body>
+</html>

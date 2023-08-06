@@ -1,32 +1,58 @@
 use super::world::GameWorld;
 use futures_util::SinkExt;
-use rapier2d::prelude::*;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio_websockets::{Error, Message, ServerBuilder};
 
-pub async fn start_listening_websocket(
-    world: Arc<Mutex<GameWorld>>,
-    rigid_body_set: Arc<Mutex<RigidBodySet>>,
-) -> Result<(), Error> {
+pub async fn start_listening_websocket(world_arc: Arc<Mutex<GameWorld>>) -> Result<(), Error> {
     println!("Start input thread begin");
     let listener = TcpListener::bind("127.0.0.1:40020").await?;
 
+    let world = world_arc.clone();
     tokio::spawn(async move {
         println!("Start input thread");
         while let Ok((stream, _)) = listener.accept().await {
             let mut ws_stream = ServerBuilder::new().accept(stream).await?;
 
+            let world = world.clone();
             tokio::spawn(async move {
                 while let Some(msg) = ws_stream.next().await {
                     match msg {
                         Ok(msg) => {
-                            println!("Received a message from a client: {:?}", msg);
+                            // println!("Received a message from a client: {:?}", msg);
                             // println!("Received a message from a client: {}", msg);
                             // ws_stream
                             //     .send(Message::text(String::from("Hello from server")))
                             //     .await;
                             // return;
+
+                            if msg.is_text() {
+                                // id|movement|attack
+                                // id|1.0:1.0|0
+
+                                let mut message = msg.as_text().unwrap();
+                                // println!("Received a message from a client: {}", message);
+                                message = message.trim();
+                                let message = message.split("|").collect::<Vec<&str>>();
+                                let id = message[0];
+                                // println!("id: {}", id);
+                                let movement = message[1]
+                                    .split(":")
+                                    .map(|x| x.parse::<f32>().unwrap())
+                                    .collect::<Vec<f32>>();
+                                // println!("movement: {:?}", movement);
+                                let attack = message[2];
+                                // println!("attack: {}", attack);
+
+                                // println!("id: {}", id);
+                                // println!("movement: {:?}", movement);
+                                // println!("attack: {}", attack);
+
+                                let mut world = world.lock().unwrap();
+
+                                world.players[0].input.mov = (movement[0], movement[1]);
+                                world.players[0].input.attack = attack == "1";
+                            }
                         }
                         Err(e) => {
                             println!("Error receiving message: {}", e);

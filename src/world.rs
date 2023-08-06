@@ -1,27 +1,26 @@
 use super::player::Player;
-use rapier2d::dynamics::RigidBodySet;
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
+#[derive(Serialize, Deserialize)]
+pub enum Direction {
+    L,
+    R,
+}
 
 pub struct GameWorld {
+    pub current_time: Instant,
     pub size: (f32, f32),
     pub players: Vec<Player>,
 }
 
 impl GameWorld {
-    pub fn get_players_state(&self, rigid_body_set: &RigidBodySet) -> Vec<PlayerState> {
-        let players = self.players.iter().map(|player| {
-            let rigid_body = &rigid_body_set[player.body_handle];
-            PlayerState {
-                id: player.id.clone(),
-                p: (
-                    rigid_body.position().translation.x,
-                    rigid_body.position().translation.y,
-                ),
-                dir: (
-                    rigid_body.position().rotation.re.cos(),
-                    rigid_body.position().rotation.re.sin(),
-                ),
-            }
+    pub fn get_players_state(&self) -> Vec<PlayerState> {
+        let players = self.players.iter().map(|player| PlayerState {
+            id: player.id.clone(),
+            p: player.position.clone(),
+            dir: Direction::L,
         });
         return players.collect();
     }
@@ -38,7 +37,27 @@ pub struct GameState {
 pub struct PlayerState {
     id: u8,
     pub p: (f32, f32),
-    pub dir: (f32, f32),
+    pub dir: Direction,
 }
 
 impl GameWorld {}
+
+pub fn start_world_loop(world_arc: Arc<Mutex<GameWorld>>) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            {
+                let mut world = world_arc.lock().unwrap();
+
+                let last_time = world.current_time;
+                let current_time = Instant::now();
+                let delta_time = current_time.duration_since(last_time).as_secs_f32();
+                // println!("delta_time: {}", delta_time);
+                world.current_time = current_time;
+
+                for player in world.players.iter_mut() {
+                    player.tick(delta_time);
+                }
+            }
+        }
+    })
+}
