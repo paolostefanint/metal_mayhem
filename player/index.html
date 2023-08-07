@@ -41,6 +41,7 @@
 
         scale(SCALE)
 
+        rectMode(CENTER)
         try {
             
 
@@ -48,7 +49,7 @@
                 fill(colors[player.id % colors.length]);
 
                 noStroke()
-                ellipse(player.p[0], player.p[1], 1 , 1 );
+                rect(player.p[0], player.p[1], 1 , 0.5 );
             }
         } catch (err) {
             console.error("Rendering error", err);
