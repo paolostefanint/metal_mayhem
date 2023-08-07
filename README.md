@@ -1,53 +1,20 @@
-# MetalMayhem
+<p align="center">
+    <img src="./assets/logo.png" title="Could this be the best game experience you've ever had?" alt="Metal Mayhem">
+</p>
 
-MetalMayhem è un picchiaduro in tempo reale nello stile dei giochi arcade anni 90 come Final Fight, Double Dragon, Golden Axe, etc.
+<!-- <p align="center" font-size="23"> --> 
+In a neon-soaked dystopian future where technology and anarchy collide, only the strongest will rise victorious.
+<!-- </p> -->
 
-I giocatori scelgono il personaggio tra tre possibili scegliendo un colore che li identifica da applicare a dei dettagli della sprite del personaggio.
+Immerse yourself in a visual masterpiece that marries cutting-edge graphics with nostalgic pixel art, transporting you to a future that pays homage to the glory days of arcade gaming. From neon-lit back alleys to towering skyscrapers crumbling in the wake of your devastation, every frame is a work of art that encapsulates the essence of a bygone era.
 
-I giocatori si muovono in un arena e si scontrano tra di loro, l'obiettivo è quello di eliminare tutti gli avversari.
-Chi rimane vivo vince.
+As the heavy metal soundtrack surges through your veins, propelling you forward in the relentless pursuit of justice, you'll experience a rush like no other. The stakes are high, the challenges are relentless, and the adrenaline-fueled action is non-stop.
 
-Alla fine della partita viene mostrata la classifica dei giocatori.
+Are you ready to enter a realm of Metal Mayhem? The battle cries of fallen warriors echo in the winds, beckoning you to rise as the ultimate champion. Sharpen your blade, charge your energy, and prepare to unleash a storm of unbridled chaos. 
 
-## Architettura
-Il server è scritto in rust e gestisce la logica del gioco, la comunicazione con i client e la persistenza dei dati.
+<p align="center">
+    <img src="./assets/hero.png" title="nah, just a game..." alt="The world needs a hero - will you answer the call?">
+</p>
 
-Il client condiviso dell'area di lotta è fatto in unity, verrà proiettato su un muro per essere visibile da tutti i giocatori.
 
-I giocatori controlleranno i loro personaggi con un applicazione web da loro telefono che mostra un joysitck ad 8 direzioni e un pulsante attacco
-
-Il gioco è per 8 persone contemporaneamente.
-
-Fasi di gioco:
-* Aggiunta giocatori
-* Selezione personaggio
-* Selezione colore
-* Gioco
-* Classifica
-
-## Selezione personaggio
-* I giocatori indicano il loro nome.
-* I giocatori scelgono accedono alla room della partita, scegliendo il personaggio tra tre possibili con caratteristiche diverse.
-* I giocatori selezionano un colore che li identifichi, che verrà a applicato a dei dettagli della sprite del personaggio.
-
-**Personaggio 1**:
-* velocità di movimento alta
-* attacco medio
-* vita bassa
-
-**Personaggio 2**:
-* velocità di movimento media
-* attacco medio
-* vita media
-
-**Personaggio 3**:
-* velocità di movimento bassa
-* attacco alto
-* vita alta
-
-## Gioco
-I client web inviano i messaggi al server
-
-il server invia i messaggi ai client unity con lo stato del gioco.
-(./example/client_message.json)[Esempio di messaggio inviato dal server al client]
 
