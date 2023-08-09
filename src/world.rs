@@ -1,6 +1,9 @@
 use super::collisions::{Axis, Body, BodyType, CollisionItem, AABB};
-use super::player::Player;
+use super::player::{EntityType, Player};
+
 use serde::{Deserialize, Serialize};
+use std::borrow::BorrowMut;
+use std::collections::HashMap;
 use std::time::Instant;
 
 #[derive(Serialize, Deserialize)]
@@ -12,12 +15,62 @@ pub enum Direction {
 pub struct GameWorld {
     pub current_time: Instant,
     pub size: (f32, f32),
-    pub players: Vec<Player>,
+    pub entities: HashMap<u32, Box<dyn GameEntity + Send + 'static>>,
+}
+
+pub trait GameEntity {
+    fn get_id(&self) -> u32;
+    fn get_body(&self) -> Body;
+    fn get_entity_type(&self) -> EntityType;
+    fn tick(&mut self, delta_time: f32);
+    fn as_player_mut(&mut self) -> &mut Player;
+    fn as_player(&self) -> &Player;
 }
 
 impl GameWorld {
+    pub fn new(world_size: (f32, f32)) -> GameWorld {
+        let mut world = GameWorld {
+            current_time: Instant::now(),
+            size: world_size,
+            entities: HashMap::new(),
+        };
+        return world;
+    }
+    pub fn get_players(&self) -> Vec<&Player> {
+        let players = self
+            .entities
+            .values()
+            .filter_map(|entity| match entity.get_entity_type() {
+                EntityType::Player => Some(entity),
+                _ => None,
+            })
+            .map(|entity| {
+                let player = entity.as_player();
+                return player;
+            })
+            .collect::<Vec<&Player>>();
+
+        return players;
+    }
+    pub fn get_players_mut(&mut self) -> Vec<&mut Player> {
+        let players = self
+            .entities
+            .values_mut()
+            .filter_map(|entity| match entity.get_entity_type() {
+                EntityType::Player => Some(entity),
+                _ => None,
+            })
+            .map(|entity| {
+                let player = entity.as_player_mut();
+                return player;
+            })
+            .collect::<Vec<&mut Player>>();
+
+        return players;
+    }
     pub fn get_players_state(&self) -> Vec<PlayerState> {
-        let players = self.players.iter().map(|player| PlayerState {
+        let players = self.get_players();
+        let players = players.iter().map(|player| PlayerState {
             id: player.id.clone(),
             p: player.position.clone(),
             dir: Direction::L,
@@ -35,12 +88,15 @@ pub struct GameState {
 
 #[derive(Serialize, Deserialize)]
 pub struct PlayerState {
-    id: u8,
+    id: u32,
     pub p: (f32, f32),
     pub dir: Direction,
 }
 
 impl GameWorld {
+    pub fn add_entity(&mut self, entity: Box<dyn GameEntity + Send + 'static>) {
+        self.entities.insert(entity.get_id(), entity);
+    }
     pub fn update(&mut self) {
         let last_time = self.current_time;
         let current_time = Instant::now();
@@ -48,99 +104,95 @@ impl GameWorld {
         // println!("delta_time: {}", delta_time
         self.current_time = current_time;
 
-        let mut collision_items: Vec<CollisionItem> = vec![];
+        // update player position and body
+        // for player in self.players.iter_mut() {
+        //     player.tick(delta_time);
+        // }
 
-        for player in self.players.iter_mut() {
-            player.tick(delta_time);
+        for entity in self.entities.values_mut() {
+            entity.tick(delta_time);
         }
 
-        for player in self.players.iter_mut() {
-            let player_aabb = AABB::new(
-                (
-                    player.position.0 - player.size.0 / 2.0,
-                    player.position.1 - player.size.1 / 2.0,
-                ),
-                (
-                    player.position.0 + player.size.0 / 2.0,
-                    player.position.1 + player.size.1 / 2.0,
-                ),
-            );
-            player.body.aabb = player_aabb.clone();
+        // get all collisions
 
-            let item = CollisionItem {
-                pid: Some(player.id),
-                body: player.body.clone(),
-            };
-            collision_items.push(item);
-        }
+        // if entity collides with other_entity
+        // entity.handle_collision(other_entity);
 
-        let mut collisions: Vec<(&CollisionItem, &CollisionItem, Axis)> = vec![];
+        // handle collisions
+        //
+        // elements_colliding.handle_collision(other_element);
+
+        // update player aabb
+        // let mut collisions: Vec<(&CollisionItem, &CollisionItem, Axis)> = vec![];
 
         // check collisions
-        for i in 0..collision_items.len() {
-            for j in i..collision_items.len() {
-                let item = &collision_items[i];
-                let other = &collision_items[j];
-                if item.pid != other.pid {
-                    if item.body.aabb.intersects(&other.body.aabb) {
-                        let axis = item.body.aabb.get_collision_axis(&other.body.aabb);
-                        collisions.push((item, other, axis));
-                    }
-                }
-            }
-        }
+        // for i in 0..collision_items.len() {
+        //     for j in i..collision_items.len() {
+        //         let item = &collision_items[i];
+        //         let other = &collision_items[j];
+        //         if item.pid != other.pid {
+        //             if item.body.aabb.intersects(&other.body.aabb) {
+        //                 let axis = item.body.aabb.get_collision_axis(&other.body.aabb);
 
-        if collisions.len() > 0 {
-            // println!("collisions: {:?}", collisions);
-            for collision in collisions.iter() {
-                let mut players_iter = self.players.iter_mut();
+        //                 println!("axis: {:?}", axis);
 
-                match collision.0.pid {
-                    Some(pid) => {
-                        let player = players_iter.find(|p| p.id == pid).unwrap();
-                        match collision.2 {
-                            Axis::X => {
-                                if player.position.0 < collision.1.body.aabb.center().0 {
-                                    player.position.0 -= 0.1;
-                                } else {
-                                    player.position.0 += 0.1;
-                                }
-                            }
-                            Axis::Y => {
-                                if player.position.1 < collision.1.body.aabb.center().1 {
-                                    player.position.1 -= 0.1;
-                                } else {
-                                    player.position.1 += 0.1;
-                                }
-                            }
-                        }
-                    }
-                    None => (),
-                }
+        //                 // collisions.push((item, other, axis));
+        //             }
+        //         }
+        //     }
+        // }
 
-                match collision.1.pid {
-                    Some(pid) => {
-                        let player = players_iter.find(|p| p.id == pid).unwrap();
-                        match collision.2 {
-                            Axis::X => {
-                                if player.position.0 < collision.0.body.aabb.center().0 {
-                                    player.position.0 -= 0.1;
-                                } else {
-                                    player.position.0 += 0.1;
-                                }
-                            }
-                            Axis::Y => {
-                                if player.position.1 < collision.0.body.aabb.center().1 {
-                                    player.position.1 -= 0.1;
-                                } else {
-                                    player.position.1 += 0.1;
-                                }
-                            }
-                        }
-                    }
-                    None => (),
-                }
-            }
-        }
+        // if collisions.len() > 0 {
+        //     // println!("collisions: {:?}", collisions);
+        //     for collision in collisions.iter() {
+        //         let mut players_iter = self.players.iter_mut();
+
+        //         match collision.0.pid {
+        //             Some(pid) => {
+        //                 let player = players_iter.find(|p| p.id == pid).unwrap();
+        //                 match collision.2 {
+        //                     Axis::X => {
+        //                         if player.position.0 < collision.1.body.aabb.center().0 {
+        //                             player.position.0 -= 0.1;
+        //                         } else {
+        //                             player.position.0 += 0.1;
+        //                         }
+        //                     }
+        //                     Axis::Y => {
+        //                         if player.position.1 < collision.1.body.aabb.center().1 {
+        //                             player.position.1 -= 0.1;
+        //                         } else {
+        //                             player.position.1 += 0.1;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //             None => (),
+        //         }
+
+        //         match collision.1.pid {
+        //             Some(pid) => {
+        //                 let player = players_iter.find(|p| p.id == pid).unwrap();
+        //                 match collision.2 {
+        //                     Axis::X => {
+        //                         if player.position.0 < collision.0.body.aabb.center().0 {
+        //                             player.position.0 -= 0.1;
+        //                         } else {
+        //                             player.position.0 += 0.1;
+        //                         }
+        //                     }
+        //                     Axis::Y => {
+        //                         if player.position.1 < collision.0.body.aabb.center().1 {
+        //                             player.position.1 -= 0.1;
+        //                         } else {
+        //                             player.position.1 += 0.1;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //             None => (),
+        //         }
+        //     }
+        // }
     }
 }

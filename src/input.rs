@@ -1,5 +1,7 @@
+use super::player::Player;
 use super::world::GameWorld;
 use futures_util::SinkExt;
+use std::mem::take;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio_websockets::{Error, Message, ServerBuilder};
@@ -34,7 +36,7 @@ pub async fn start_listening_websocket(world_arc: Arc<Mutex<GameWorld>>) -> Resu
                                 // println!("Received a message from a client: {}", message);
                                 message = message.trim();
                                 let message = message.split("|").collect::<Vec<&str>>();
-                                let id = message[0];
+                                // let id = message[0];
                                 // println!("id: {}", id);
                                 let movement = message[1]
                                     .split(":")
@@ -50,8 +52,13 @@ pub async fn start_listening_websocket(world_arc: Arc<Mutex<GameWorld>>) -> Resu
 
                                 let mut world = world.lock().unwrap();
 
-                                world.players[0].input.mov = (movement[0], movement[1]);
-                                world.players[0].input.attack = attack == "1";
+                                let mut players = world.get_players_mut();
+                                let first_player = players.get_mut(0).unwrap();
+
+                                let mut p = take(*first_player);
+
+                                p.input.mov = (movement[0], movement[1]);
+                                p.input.attack = attack == "1";
                             }
                         }
                         Err(e) => {

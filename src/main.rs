@@ -1,7 +1,6 @@
 mod collisions;
 mod connections;
 mod input;
-mod physics;
 mod player;
 mod render;
 mod world;
@@ -9,17 +8,17 @@ mod world;
 use collisions::{Axis, CollisionItem, AABB};
 use connections::start_client_connections;
 use input::start_listening_websocket;
-use physics::setup_world;
 use player::{create_player, Player, PlayerConfiguration};
 use render::render;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use world::GameWorld;
 
 const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
 
 #[tokio::main]
 async fn main() {
-    let mut world = setup_world(WORLD_SIZE);
+    let mut world = GameWorld::new(WORLD_SIZE);
 
     // Add player
     let player1_conf = PlayerConfiguration {
@@ -80,8 +79,11 @@ async fn main() {
     // };
     // let player8: Player = create_player(&player8_conf, &mut world);
 
-    world.players.push(player1);
-    world.players.push(player2);
+    world.add_entity(Box::new(player1));
+    world.add_entity(Box::new(player2));
+
+    // world.players.push(player1);
+    // world.players.push(player2);
     // world.players.push(player3);
     // world.players.push(player4);
     // world.players.push(player5);
