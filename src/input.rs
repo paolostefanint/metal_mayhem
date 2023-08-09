@@ -53,12 +53,17 @@ pub async fn start_listening_websocket(world_arc: Arc<Mutex<GameWorld>>) -> Resu
                                 let mut world = world.lock().unwrap();
 
                                 let mut players = world.get_players_mut();
-                                let first_player = players.get_mut(0).unwrap();
+                                let first_player: &mut Player = players.get_mut(0).unwrap();
 
-                                let mut p = take(*first_player);
+                                first_player.input.mov = (movement[0], movement[1]);
+                                first_player.input.attack = attack == "1";
 
-                                p.input.mov = (movement[0], movement[1]);
-                                p.input.attack = attack == "1";
+                                // let mut p = take(*first_player);
+
+                                // println!("movement: {:?}", movement);
+
+                                // p.input.mov = (movement[0], movement[1]);
+                                // p.input.attack = attack == "1";
                             }
                         }
                         Err(e) => {

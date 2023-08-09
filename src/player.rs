@@ -60,10 +60,13 @@ impl GameEntity for Player {
         let (mov_x, mov_y) = self.input.mov;
         let speed = self.stats.max_speed;
 
-        // self.position = (
-        //     x + mov_x * speed * delta_time,
-        //     y + mov_y * speed * delta_time,
-        // );
+        println!("{:?}", self.input.mov);
+
+        self.position = (
+            x + mov_x * speed * delta_time,
+            y + mov_y * speed * delta_time,
+        );
+
         // self.body.aabb.min = (
         //     self.position.0 - self.size.0 / 2.0,
         //     self.position.1 - self.size.1 / 2.0,
@@ -73,7 +76,7 @@ impl GameEntity for Player {
         //     self.position.1 + self.size.1 / 2.0,
         // );
 
-        // println!("player position tick: {:?}", self.position);
+        println!("player position tick: {:?}", self.position);
     }
 }
 

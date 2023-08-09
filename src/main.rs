@@ -29,13 +29,13 @@ async fn main() {
     };
     let player1: Player = create_player(&player1_conf, &mut world);
 
-    let player2_conf = PlayerConfiguration {
-        player_id: 2,
-        initial_position: (10.0, 5.0),
-        size: (1.0, 0.5),
-        speed: 3.0,
-    };
-    let player2: Player = create_player(&player2_conf, &mut world);
+    // let player2_conf = PlayerConfiguration {
+    //     player_id: 2,
+    //     initial_position: (10.0, 5.0),
+    //     size: (1.0, 0.5),
+    //     speed: 3.0,
+    // };
+    // let player2: Player = create_player(&player2_conf, &mut world);
 
     // let player3_conf = PlayerConfiguration {
     //     player_id: 3,
@@ -80,7 +80,7 @@ async fn main() {
     // let player8: Player = create_player(&player8_conf, &mut world);
 
     world.add_entity(Box::new(player1));
-    world.add_entity(Box::new(player2));
+    // world.add_entity(Box::new(player2));
 
     // world.players.push(player1);
     // world.players.push(player2);
