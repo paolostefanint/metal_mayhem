@@ -62,8 +62,3 @@ pub enum Axis {
     X,
     Y,
 }
-
-pub struct CollisionItem {
-    pub pid: Option<u8>,
-    pub body: Body,
-}

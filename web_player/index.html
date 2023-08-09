@@ -50,6 +50,13 @@
 
                 noStroke()
                 rect(player.p[0], player.p[1], 1 , 0.5 );
+
+                if (player.attack) {
+                    let hitboxPosition = player.dir === "L" ? player.p[0] - 1 : player.p[0] + 1;
+                    fill(255, 0, 0);
+                    rect(hitboxPosition, player.p[1], 1 , 1 );
+                }
+
             }
         } catch (err) {
             console.error("Rendering error", err);

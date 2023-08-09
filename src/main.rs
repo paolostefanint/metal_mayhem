@@ -5,13 +5,12 @@ mod player;
 mod render;
 mod world;
 
-use collisions::{Axis, CollisionItem, AABB};
 use connections::start_client_connections;
 use input::start_listening_websocket;
 use player::{create_player, Player, PlayerConfiguration};
 use render::render;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use world::GameWorld;
 
 const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
@@ -29,13 +28,13 @@ async fn main() {
     };
     let player1: Player = create_player(&player1_conf, &mut world);
 
-    // let player2_conf = PlayerConfiguration {
-    //     player_id: 2,
-    //     initial_position: (10.0, 5.0),
-    //     size: (1.0, 0.5),
-    //     speed: 3.0,
-    // };
-    // let player2: Player = create_player(&player2_conf, &mut world);
+    let player2_conf = PlayerConfiguration {
+        player_id: 2,
+        initial_position: (10.0, 5.0),
+        size: (1.0, 0.5),
+        speed: 3.0,
+    };
+    let player2: Player = create_player(&player2_conf, &mut world);
 
     // let player3_conf = PlayerConfiguration {
     //     player_id: 3,
@@ -80,7 +79,7 @@ async fn main() {
     // let player8: Player = create_player(&player8_conf, &mut world);
 
     world.add_entity(Box::new(player1));
-    // world.add_entity(Box::new(player2));
+    world.add_entity(Box::new(player2));
 
     // world.players.push(player1);
     // world.players.push(player2);
@@ -108,7 +107,6 @@ async fn main() {
             let mut world = world_arc.lock().unwrap();
             world.update();
         }
-        // world.handle_inputs(&mut rigid_body_set);
         // {
         //     let world = world_arc.lock().unwrap();
         //     println!("world");

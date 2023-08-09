@@ -40,6 +40,11 @@
             background(51);
 
             stroke(255);
+
+            let movement = `0:0`;
+            let attack = `0`;
+            let playerId = 1;
+
             if (mouseIsPressed) {
 
                 
@@ -54,13 +59,17 @@
                 const normY = y / mag;
 
 
-                const data = `1|${normX}:${normY}|0` 
-                send(data);
-            } else {
-                const data = `0|0:0|0` 
-               send(data);
+                movement = `${normX}:${normY}` 
+            }         
+
+            if (keyIsPressed) {
+                console.log(keyCode);
+
+                attack = 1;
             }
-        
+
+           let data = `${playerId}|${movement}|${attack}`; 
+                send(data);
 
         }
 

@@ -1,7 +1,4 @@
 use super::world::GameWorld;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
 
 pub fn render(world: &GameWorld) {
     // clear screen

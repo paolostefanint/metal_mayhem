@@ -57,13 +57,6 @@ pub async fn start_listening_websocket(world_arc: Arc<Mutex<GameWorld>>) -> Resu
 
                                 first_player.input.mov = (movement[0], movement[1]);
                                 first_player.input.attack = attack == "1";
-
-                                // let mut p = take(*first_player);
-
-                                // println!("movement: {:?}", movement);
-
-                                // p.input.mov = (movement[0], movement[1]);
-                                // p.input.attack = attack == "1";
                             }
                         }
                         Err(e) => {

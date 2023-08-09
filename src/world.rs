@@ -1,15 +1,21 @@
-use super::collisions::{Axis, Body, BodyType, CollisionItem, AABB};
-use super::player::{EntityType, Player};
+use crate::player::PlayerHitBox;
 
+use super::collisions::Body;
+use super::player::{EntityType, Player};
 use serde::{Deserialize, Serialize};
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::time::Instant;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum Direction {
     L,
     R,
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        return Direction::L;
+    }
 }
 
 pub struct GameWorld {
@@ -23,19 +29,29 @@ pub trait GameEntity {
     fn get_body(&self) -> Body;
     fn get_entity_type(&self) -> EntityType;
     fn tick(&mut self, delta_time: f32);
-    fn as_player_mut(&mut self) -> &mut Player;
-    fn as_player(&self) -> &Player;
+    // I obviously don't know what I'm doing here
+    // Adding new entities means adding new methods to this trait
+    // I don't want to do that
+    // I want to be able to add new entities without changing this trait
+    // I don't know how to do that
+    // I feel dumb
+    fn as_player_mut(&mut self) -> Option<&mut Player> {
+        return None;
+    }
+    fn as_player(&self) -> Option<&Player> {
+        return None;
+    }
 }
 
 impl GameWorld {
     pub fn new(world_size: (f32, f32)) -> GameWorld {
-        let mut world = GameWorld {
+        return GameWorld {
             current_time: Instant::now(),
             size: world_size,
             entities: HashMap::new(),
         };
-        return world;
     }
+
     pub fn get_players(&self) -> Vec<&Player> {
         let players = self
             .entities
@@ -45,7 +61,7 @@ impl GameWorld {
                 _ => None,
             })
             .map(|entity| {
-                let player = entity.as_player();
+                let player = entity.as_player().unwrap();
                 return player;
             })
             .collect::<Vec<&Player>>();
@@ -61,7 +77,7 @@ impl GameWorld {
                 _ => None,
             })
             .map(|entity| {
-                let player = entity.as_player_mut();
+                let player = entity.as_player_mut().unwrap();
                 return player;
             })
             .collect::<Vec<&mut Player>>();
@@ -73,7 +89,8 @@ impl GameWorld {
         let players = players.iter().map(|player| PlayerState {
             id: player.id.clone(),
             p: player.position.clone(),
-            dir: Direction::L,
+            dir: player.direction.clone(),
+            attack: player.input.attack,
         });
         return players.collect();
     }
@@ -91,6 +108,7 @@ pub struct PlayerState {
     id: u32,
     pub p: (f32, f32),
     pub dir: Direction,
+    pub attack: bool,
 }
 
 impl GameWorld {
@@ -104,14 +122,43 @@ impl GameWorld {
         // println!("delta_time: {}", delta_time
         self.current_time = current_time;
 
-        // update player position and body
-        // for player in self.players.iter_mut() {
-        //     player.tick(delta_time);
-        // }
-
         for entity in self.entities.values_mut() {
             entity.tick(delta_time);
         }
+
+        let mut hitboxes: Vec<PlayerHitBox> = vec![];
+
+        for player in self.get_players() {
+            if player.input.attack {
+                let hitbox_position = match player.direction {
+                    Direction::L => (player.position.0 - 1.0, player.position.1),
+                    Direction::R => (player.position.0 + 1.0, player.position.1),
+                };
+                let hitbox_size = (1.0, 1.0);
+                let hitbox = PlayerHitBox::new(player.get_id(), hitbox_size, hitbox_position);
+                hitboxes.push(hitbox);
+            }
+        }
+
+        for hitbox in hitboxes {
+            for player in self.get_players_mut() {
+                // check collisions on player
+                if hitbox.player_id != player.id && hitbox.collides_with(&player) {
+                    println!("player hit");
+                    player.take_damage(1.0);
+                }
+            }
+        }
+
+        // for (key, entity) in self.entities.iter_mut() {
+        //     for (other_key, other_entity) in self.entities.iter_mut() {
+        //         if key != other_key {
+        //             entity.handle_collisions(other_entity);
+        //         }
+        //     }
+        // }
+
+        // add
 
         // get all collisions
 
