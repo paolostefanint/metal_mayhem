@@ -7,7 +7,7 @@ mod world;
 
 use connections::start_client_connections;
 use input::start_listening_websocket;
-use player::{create_player, Player, PlayerConfiguration};
+use player::{Player, PlayerConfiguration};
 use render::render;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -26,7 +26,7 @@ async fn main() {
         size: (1.0, 0.5),
         speed: 3.0,
     };
-    let player1: Player = create_player(&player1_conf, &mut world);
+    let player1: Player = Player::new(&player1_conf);
 
     let player2_conf = PlayerConfiguration {
         player_id: 2,
@@ -34,61 +34,10 @@ async fn main() {
         size: (1.0, 0.5),
         speed: 3.0,
     };
-    let player2: Player = create_player(&player2_conf, &mut world);
-
-    // let player3_conf = PlayerConfiguration {
-    //     player_id: 3,
-    //     initial_position: (15.0, 5.0),
-    //     size: 1.0,
-    // };
-    // let player3: Player = create_player(&player3_conf, &mut world);
-
-    // let player4_conf = PlayerConfiguration {
-    //     player_id: 4,
-    //     initial_position: (15.0, 5.0),
-    //     size: 1.0,
-    // };
-    // let player4: Player = create_player(&player4_conf, &mut world);
-
-    // let player5_conf = PlayerConfiguration {
-    //     player_id: 5,
-    //     initial_position: (20.0, 10.0),
-    //     size: 1.0,
-    // };
-    // let player5: Player = create_player(&player5_conf, &mut world);
-
-    // let player6_conf = PlayerConfiguration {
-    //     player_id: 6,
-    //     initial_position: (15.0, 5.0),
-    //     size: 1.0,
-    // };
-    // let player6: Player = create_player(&player6_conf, &mut world);
-
-    // let player7_conf = PlayerConfiguration {
-    //     player_id: 7,
-    //     initial_position: (15.0, 5.0),
-    //     size: 1.0,
-    // };
-    // let player7: Player = create_player(&player7_conf, &mut world);
-
-    // let player8_conf = PlayerConfiguration {
-    //     player_id: 8,
-    //     initial_position: (17.0, 5.0),
-    //     size: 1.0,
-    // };
-    // let player8: Player = create_player(&player8_conf, &mut world);
+    let player2: Player = Player::new(&player2_conf);
 
     world.add_entity(Box::new(player1));
     world.add_entity(Box::new(player2));
-
-    // world.players.push(player1);
-    // world.players.push(player2);
-    // world.players.push(player3);
-    // world.players.push(player4);
-    // world.players.push(player5);
-    // world.players.push(player6);
-    // world.players.push(player7);
-    // world.players.push(player8);
 
     let world_arc = Arc::new(Mutex::new(world));
 

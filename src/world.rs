@@ -1,7 +1,6 @@
-use crate::player::PlayerHitBox;
-
 use super::collisions::Body;
 use super::player::{EntityType, Player};
+use crate::player::{PlayerHitBox, SpriteState};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Instant;
@@ -91,6 +90,8 @@ impl GameWorld {
             p: player.position.clone(),
             dir: player.direction.clone(),
             attack: player.input.attack,
+            health: player.stats.health,
+            sprite_state: player.sprite_state.clone(),
         });
         return players.collect();
     }
@@ -109,6 +110,8 @@ pub struct PlayerState {
     pub p: (f32, f32),
     pub dir: Direction,
     pub attack: bool,
+    pub health: f32,
+    pub sprite_state: SpriteState,
 }
 
 impl GameWorld {
@@ -128,7 +131,7 @@ impl GameWorld {
 
         let mut hitboxes: Vec<PlayerHitBox> = vec![];
 
-        for player in self.get_players() {
+        for player in self.get_players_mut() {
             if player.input.attack {
                 let hitbox_position = match player.direction {
                     Direction::L => (player.position.0 - 1.0, player.position.1),
@@ -137,6 +140,7 @@ impl GameWorld {
                 let hitbox_size = (1.0, 1.0);
                 let hitbox = PlayerHitBox::new(player.get_id(), hitbox_size, hitbox_position);
                 hitboxes.push(hitbox);
+                player.sprite_state = SpriteState::Attack;
             }
         }
 

@@ -1,8 +1,22 @@
-use super::world::Direction;
-use crate::world::GameEntity;
-
 use super::collisions::{Body, BodyType, AABB};
+use super::world::Direction;
 use super::world::GameWorld;
+use crate::world::GameEntity;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum SpriteState {
+    Idle,
+    Walk,
+    Attack,
+    Damage,
+    Dead,
+}
+impl Default for SpriteState {
+    fn default() -> Self {
+        SpriteState::Idle
+    }
+}
 
 pub enum EntityType {
     Player,
@@ -25,12 +39,30 @@ pub struct Player {
     pub position: (f32, f32),
     pub input: PlayerInputs,
     pub direction: Direction,
+    pub sprite_state: SpriteState,
 }
 
 impl Player {
+    pub fn new(player_configuration: &PlayerConfiguration) -> Player {
+        Player {
+            id: player_configuration.player_id,
+            stats: PlayerStats {
+                attack: 0.0,
+                defense: 0.0,
+                max_speed: player_configuration.speed,
+                health: 100.0,
+            },
+            size: player_configuration.size,
+            position: player_configuration.initial_position,
+            direction: Direction::R,
+            input: PlayerInputs::new(),
+            sprite_state: SpriteState::Idle,
+        }
+    }
     pub fn take_damage(&mut self, damage: f32) {
         // go to max(0, health - damage)
         self.stats.health = (self.stats.health - damage).max(0.0);
+        self.sprite_state = SpriteState::Damage;
     }
 }
 
@@ -80,6 +112,12 @@ impl GameEntity for Player {
             x + mov_x * speed * delta_time,
             y + mov_y * speed * delta_time,
         );
+
+        self.sprite_state = if mov_x != 0.0 || mov_y != 0.0 {
+            SpriteState::Walk
+        } else {
+            SpriteState::Idle
+        };
     }
 }
 
@@ -155,32 +193,4 @@ pub struct PlayerConfiguration {
     pub initial_position: (f32, f32),
     pub size: (f32, f32),
     pub speed: f32,
-}
-
-pub fn create_player(player_configuration: &PlayerConfiguration, world: &mut GameWorld) -> Player {
-    // let aabb = AABB::new(
-    //     (
-    //         player_configuration.initial_position.0 - player_configuration.size.0 / 2.0,
-    //         player_configuration.initial_position.1 - player_configuration.size.1 / 2.0,
-    //     ),
-    //     (
-    //         player_configuration.initial_position.0 + player_configuration.size.0 / 2.0,
-    //         player_configuration.initial_position.1 + player_configuration.size.1 / 2.0,
-    //     ),
-    // );
-
-    let player = Player {
-        id: player_configuration.player_id,
-        stats: PlayerStats {
-            attack: 0.0,
-            defense: 0.0,
-            max_speed: player_configuration.speed,
-            health: 0.0,
-        },
-        size: player_configuration.size,
-        position: player_configuration.initial_position,
-        direction: Direction::R,
-        input: PlayerInputs::new(),
-    };
-    return player;
 }

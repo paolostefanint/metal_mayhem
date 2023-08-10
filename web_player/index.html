@@ -41,21 +41,37 @@
 
         scale(SCALE)
 
-        rectMode(CENTER)
         try {
             
 
             for (let player of players.players) {
+                rectMode(CENTER)
                 fill(colors[player.id % colors.length]);
 
                 noStroke()
                 rect(player.p[0], player.p[1], 1 , 0.5 );
+
+                textSize(0.5);
+                textAlign(CENTER, CENTER);
+                fill(255, 255, 255);
+                text(player.sprite_state, player.p[0], player.p[1] - 0.5)
 
                 if (player.attack) {
                     let hitboxPosition = player.dir === "L" ? player.p[0] - 1 : player.p[0] + 1;
                     fill(255, 0, 0);
                     rect(hitboxPosition, player.p[1], 1 , 1 );
                 }
+
+                // health bar
+                strokeWeight(0.1)
+                stroke(255, 255, 255);
+                fill(255, 0, 0);
+                rect(player.p[0], player.p[1] - 1, 1 , 0.2 );
+
+                noStroke();
+                fill(0, 255, 0);
+                rect(player.p[0], player.p[1] - 1, player.health / 100 , 0.2 );
+
 
             }
         } catch (err) {
