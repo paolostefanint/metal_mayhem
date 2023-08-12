@@ -1,7 +1,9 @@
 use crate::player::Player;
 use crate::world::GameWorld;
+use serde::{Deserialize, Serialize};
 
-pub enum GamePhases {
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub enum GamePhase {
     WaitingForPlayers,
     RoundCountdown,
     Running,
@@ -9,14 +11,14 @@ pub enum GamePhases {
 }
 
 pub struct Game {
-    phase: GamePhases,
+    pub phase: GamePhase,
     world: GameWorld,
 }
 
 impl Game {
     pub fn new(world_size: (f32, f32)) -> Game {
         Game {
-            phase: GamePhases::WaitingForPlayers,
+            phase: GamePhase::WaitingForPlayers,
             world: GameWorld::new(world_size),
         }
     }

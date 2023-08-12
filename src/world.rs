@@ -1,4 +1,5 @@
 use super::collisions::Body;
+use super::game::GamePhase;
 use super::player::{EntityType, Player};
 use crate::player::{PlayerHitBox, SpriteState};
 use serde::{Deserialize, Serialize};
@@ -100,7 +101,7 @@ impl GameWorld {
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub current_time: f32,
-    pub current_state: String,
+    pub current_state: GamePhase,
     pub players: Vec<PlayerState>,
 }
 
