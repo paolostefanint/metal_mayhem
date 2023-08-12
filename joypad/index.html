@@ -17,23 +17,32 @@
 
         const canvasSize = 400;
         
-        const socket = new WebSocket('ws://localhost:40020');
+        const socket = new WebSocket('ws://15.161.227.36:40020');
+        let ping = 0;
+        let lastPingTime = 0;
         let players = [];
 
         socket.addEventListener('open', function (event) {
             console.log('Connected to WS Server');
             socketIsConnected = true;
+            checkLatency();
         });
 
         socket.addEventListener("message", (event) => {
-            // console.log(event.data);
-            // players = JSON.parse(event.data);
+            let message = event.data.toString();
+            if (message.startsWith("pong")) {
+                ping = +Date.now() - lastPingTime;
+                setTimeout(checkLatency, 100);
+            } 
         });
 
-        function setup() {
-            
-            createCanvas(canvasSize, canvasSize);
+        function checkLatency() {
+            lastPingTime = +Date.now();
+            send("ping");
+        }
 
+        function setup() {
+            createCanvas(canvasSize, canvasSize);
         }
         
         function draw() {
@@ -45,9 +54,15 @@
             let attack = `0`;
             let playerId = 1;
 
+            fill(255);
+            noStroke()
+            textSize(15);
+            textAlign(LEFT, TOP);
+            text(`latency: ${ping}`, 10, 10);
+
             if (mouseIsPressed) {
 
-                
+                stroke(255);  
                 line(mouseX, mouseY, canvasSize / 2, canvasSize / 2);
                 // find and normalize the vector between the mouse and the center
 
@@ -63,13 +78,11 @@
             }         
 
             if (keyIsPressed) {
-                console.log(keyCode);
-
                 attack = 1;
             }
 
-           let data = `${playerId}|${movement}|${attack}`; 
-                send(data);
+            let data = `${playerId}|${movement}|${attack}`; 
+            send(data);
 
         }
 

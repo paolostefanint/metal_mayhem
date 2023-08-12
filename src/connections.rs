@@ -1,3 +1,4 @@
+use super::game::Game;
 use super::world::{GameState, GameWorld};
 use futures_util::SinkExt;
 use serde_json;
@@ -6,13 +7,17 @@ use tokio::net::TcpListener;
 use tokio::time::{self, Duration};
 use tokio_websockets::{Error, Message, ServerBuilder};
 
-pub async fn start_client_connections(world: Arc<Mutex<GameWorld>>) -> Result<(), Error> {
+pub async fn start_client_connections(game: Arc<Mutex<Game>>) -> Result<(), Error> {
     println!("Start client connections thread begin");
     let listener = TcpListener::bind("127.0.0.1:42000").await?;
 
     tokio::spawn(async move {
         while let Ok((stream, _)) = listener.accept().await {
-            let world = world.clone();
+            let game = game.clone();
+            println!(
+                "New sender connection accepted from {:?}",
+                stream.peer_addr().unwrap()
+            );
 
             let mut ws_stream = ServerBuilder::new().accept(stream).await?;
 
@@ -22,9 +27,9 @@ pub async fn start_client_connections(world: Arc<Mutex<GameWorld>>) -> Result<()
 
                 loop {
                     interval.tick().await;
-                    let world = world.clone();
+                    let game = game.clone();
 
-                    let message = Message::text(get_game_state(world));
+                    let message = Message::text(get_game_state(game));
 
                     match ws_stream.send(message).await {
                         // Ok(_) => println!("Message sent"),
@@ -44,9 +49,10 @@ pub async fn start_client_connections(world: Arc<Mutex<GameWorld>>) -> Result<()
     Ok::<_, Error>(())
 }
 
-fn get_game_state(world: Arc<Mutex<GameWorld>>) -> String {
+fn get_game_state(game: Arc<Mutex<Game>>) -> String {
     {
-        let world = world.lock().unwrap();
+        let game = game.lock().unwrap();
+        let world = game.get_world();
 
         let game_state = GameState {
             current_time: 0.0,

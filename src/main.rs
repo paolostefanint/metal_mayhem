@@ -1,11 +1,14 @@
 mod collisions;
 mod connections;
+mod game;
 mod input;
+mod map;
 mod player;
 mod render;
 mod world;
 
 use connections::start_client_connections;
+use game::Game;
 use input::start_listening_websocket;
 use player::{Player, PlayerConfiguration};
 use render::render;
@@ -17,7 +20,7 @@ const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
 
 #[tokio::main]
 async fn main() {
-    let mut world = GameWorld::new(WORLD_SIZE);
+    let mut game = Game::new(WORLD_SIZE);
 
     // Add player
     let player1_conf = PlayerConfiguration {
@@ -36,25 +39,34 @@ async fn main() {
     };
     let player2: Player = Player::new(&player2_conf);
 
-    world.add_entity(Box::new(player1));
-    world.add_entity(Box::new(player2));
+    let player3_conf = PlayerConfiguration {
+        player_id: 3,
+        initial_position: (20.0, 5.0),
+        size: (1.0, 0.5),
+        speed: 3.0,
+    };
+    let player3: Player = Player::new(&player3_conf);
 
-    let world_arc = Arc::new(Mutex::new(world));
+    game.add_player(player1);
+    game.add_player(player2);
+    game.add_player(player3);
+
+    let game_arc = Arc::new(Mutex::new(game));
 
     // INPUT
     //
-    let world = world_arc.clone();
-    let _ = start_listening_websocket(world).await;
+    let game = game_arc.clone();
+    let _ = start_listening_websocket(game).await;
 
     // WEBSOCKET CONNECTIONS
     //
-    let world = world_arc.clone();
-    let _c = start_client_connections(world).await;
+    let game = game_arc.clone();
+    let _c = start_client_connections(game).await;
 
     loop {
         {
-            let mut world = world_arc.lock().unwrap();
-            world.update();
+            let mut game = game_arc.lock().unwrap();
+            game.update();
         }
         // {
         //     let world = world_arc.lock().unwrap();
