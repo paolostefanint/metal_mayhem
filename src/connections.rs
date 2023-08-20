@@ -1,5 +1,5 @@
 use super::game::Game;
-use super::world::{GameState, GameWorld};
+use super::world::{GameState};
 use futures_util::SinkExt;
 use serde_json;
 use std::sync::{Arc, Mutex};
@@ -60,7 +60,7 @@ fn get_game_state(game: Arc<Mutex<Game>>) -> String {
             players: world.get_players_state(),
         };
         let game_state_json = serde_json::to_string(&game_state).unwrap();
-
+        println!("{}", game_state_json);
         return game_state_json;
     }
 }

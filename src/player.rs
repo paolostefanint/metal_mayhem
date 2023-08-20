@@ -1,6 +1,6 @@
 use super::collisions::{Body, BodyType, AABB};
 use super::world::Direction;
-use super::world::GameWorld;
+
 use crate::world::GameEntity;
 use serde::{Deserialize, Serialize};
 
@@ -170,7 +170,7 @@ impl GameEntity for PlayerHitBox {
             body_type: BodyType::Dynamic,
         };
     }
-    fn tick(&mut self, delta_time: f32) {}
+    fn tick(&mut self, _delta_time: f32) {}
 }
 
 #[derive(Default, Debug, Copy, Clone)]

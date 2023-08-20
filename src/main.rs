@@ -11,10 +11,10 @@ use connections::start_client_connections;
 use game::Game;
 use input::start_listening_websocket;
 use player::{Player, PlayerConfiguration};
-use render::render;
+
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use world::GameWorld;
+
 
 const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
 
