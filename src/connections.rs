@@ -60,7 +60,7 @@ fn get_game_state(game: Arc<Mutex<Game>>) -> String {
             players: world.get_players_state(),
         };
         let game_state_json = serde_json::to_string(&game_state).unwrap();
-        println!("{}", game_state_json);
+        //println!("{}", game_state_json);
         return game_state_json;
     }
 }
