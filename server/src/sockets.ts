@@ -1,8 +1,5 @@
-import fs from "fs";
-import * as util from "util";
-import WebSocket, {WebSocketServer} from "ws";
+import WebSocket from "ws";
 import * as dotenv from "dotenv";
-import net from "net";
 import {EventEmitter} from "events";
 
 
@@ -15,14 +12,14 @@ export interface SendingSocket {
     send: (message: string) => void;
 }
 
-function startSendingSocket(): SendingSocket {
+function createCoreSendingSocket(): SendingSocket {
     
-    let coreAddress = "ws://127.0.0.1:40020"
+    let coreAddress = "ws://127.0.0.1:40010"
     let ws: WebSocket;
 
     const connect = () => {
     
-        const ws = new WebSocket(coreAddress);
+        ws = new WebSocket(coreAddress);
 
         ws.on('error', (err) => {
             console.log('Sending Socket Error: ' + err);
@@ -42,6 +39,11 @@ function startSendingSocket(): SendingSocket {
 
     return {
         send: message => {
+            console.log("Sending message", message);
+            if (ws.readyState !== WebSocket.OPEN) {
+                console.log('Sending Socket Not Ready');
+                return;
+            }
             ws.send(message);
         }
     }
@@ -83,7 +85,7 @@ function createCoreListeningSocket(): EventEmitter {
 
 
 export const coreListeningSocket = createCoreListeningSocket()
-export const coreSendingSocket = startSendingSocket()
+export const coreSendingSocket = createCoreSendingSocket()
 
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

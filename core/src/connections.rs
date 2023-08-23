@@ -55,7 +55,6 @@ fn get_game_state(game: Arc<Mutex<Game>>) -> String {
         let world = game.get_world();
 
         let game_state = GameState {
-            current_time: 0.0,
             current_state: game.phase,
             players: world.get_players_state(),
         };

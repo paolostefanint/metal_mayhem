@@ -1,343 +1,350 @@
-import {Client, Room} from "colyseus";
-import {Queue} from "./queue";
+import { Client, Room } from "colyseus";
+import { Queue } from "./queue";
 import http from "http";
-import {Player, RelayState} from "./state";
-import {coreListeningSocket} from "./ipc_sockets";
-import {restoreTruncatedMessage} from "./message-handling";
-import {Globals} from "./global";
+import { Player, RelayState } from "./state";
+import { coreListeningSocket } from "./sockets";
+import { Globals } from "./global";
+import { createPacketSizeTicker } from "./packet-size-ticker";
+import { parseCoreMessage } from "./message-handling";
 
-export class DropRelayRoom extends Room<RelayState> { // tslint:disable-line
+export class DropRelayRoom extends Room<RelayState> {
+    // tslint:disable-line
 
-  public allowReconnectionTime: number = 0;
-  autoDispose = false;
+    public allowReconnectionTime: number = 0;
+    autoDispose = false;
 
-  waitingPlayers = new Queue<Player>();
-  playingPlayers = new Set<Player>();
+    waitingPlayers = new Queue<Player>();
+    playingPlayers = new Set<Player>();
 
-  waitingListMissingTime = 0;
-  waitingListTimeout: NodeJS.Timeout;
-  waitingListTimer: NodeJS.Timer;
+    waitingListMissingTime = 0;
+    waitingListTimeout: NodeJS.Timeout;
+    waitingListTimer: NodeJS.Timer;
 
-  public onCreate(_options: Partial<{
-    maxClients: number,
-    allowReconnectionTime: number,
-    metadata: any,
-  }>) {
-    console.log('Creating Relay Room...');
+    packetSizeTicker = createPacketSizeTicker();
 
-    this.setState(new RelayState());
+    public onCreate(
+        _options: Partial<{
+            maxClients: number;
+            allowReconnectionTime: number;
+            metadata: any;
+        }>,
+    ) {
+        console.log("Creating Relay Room...");
 
-    let lastRemainingToken = "";
+        this.setState(new RelayState());
 
-    let dataAtLastMeasurement = 0;
-    let currentData = 0;
+        coreListeningSocket.on("message", (data: ArrayBuffer) => {
+            this.packetSizeTicker(data);
 
-    let sumPacketSize = 0;
-    let packagesFromLastMeasurement = 0;
+            const message = data.toString();
 
-    setInterval(() => {
-        let dataInLastSecond = currentData - dataAtLastMeasurement;
-        dataAtLastMeasurement = currentData;
+            handleCoreMessage(message);
 
-        let avgPacketSize = packagesFromLastMeasurement > 0 
-            ?  sumPacketSize / packagesFromLastMeasurement
-            : 0;
-        packagesFromLastMeasurement = 0;
-        sumPacketSize = 0;
-
-        console.log(`core data rate / avg package size: ${dataInLastSecond} B/s / ${avgPacketSize} B`);
-       
-    }, 1000);
-
-    coreListeningSocket.on('message', (data:ArrayBuffer) => {
-
-        currentData += data.byteLength;
-        sumPacketSize += data.byteLength;
-        packagesFromLastMeasurement++;
-
-        // console.log("listening socket message", data.toString());
-
-
-
-        // more than one message may be mixed on a single send due to how socket is buffered
-        // const incomingMessages = data.toString().split('\n');
-
-        // lastRemainingToken = restoreTruncatedMessage(incomingMessages, lastRemainingToken);
-
-        // incomingMessages
-        //   .filter(message => message.length > 0)
-        //   .forEach(message => {
-        //     if (message.startsWith("*endgame:")) {
-        //       this.state.gameRunning = false;
-        //     }
-        //   })
-      });
-
-    this.onMessage("identity", (client, data) => {
-
-      const [sub, name, avatar] = data.split("#");
-
-      console.log(`RELAY: got player identity`, sub, name, avatar)
-
-      let player = DropRelayRoom.createPlayerOnJoin(client, sub, name, avatar);
-
-      if (this.playerAlreadyExists(sub)) {
-        player = this.handlePlayerReconnection(player, client);
-
-        if (this.playerShouldEnterBattleOnConnect(player)) {
-
-          this.sendPlayerToBattle(client);
-
-        } else {
-          this.putPlayerInWaitingList(player);
-
-          if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
-
-            if (!this.timerIsRunning()) {
-              this.startGameTimer();
-              this.startBroadcastTimer();
+            if (message.startsWith("gameover")) {
+                this.state.gameRunning = false;
             }
-          }
 
-        }
+            // incomingMessages
+            //   .filter(message => message.length > 0)
+            //   .forEach(message => {
+            //     if (message.startsWith("*endgame:")) {
+            //       this.state.gameRunning = false;
+            //     }
+            //   })
+        });
 
-      } else {
+        this.onMessage("identity", (client, data) => {
+            const [sub, name, avatar] = data.split("#");
 
-        this.handleNewPlayerJoining(player);
-        this.putPlayerInWaitingList(player);
+            console.log(`RELAY: got player identity`, sub, name, avatar);
 
-        if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
-          this.startGameTimer();
-          this.startBroadcastTimer();
-        }
+            let player = DropRelayRoom.createPlayerOnJoin(
+                client,
+                sub,
+                name,
+                avatar,
+            );
 
+            if (this.playerAlreadyExists(sub)) {
+                player = this.handlePlayerReconnection(player, client);
 
-      }
+                if (this.playerShouldEnterBattleOnConnect(player)) {
+                    this.sendPlayerToBattle(client);
+                } else {
+                    this.putPlayerInWaitingList(player);
 
-      this.broadcatsQueue();
+                    if (
+                        !this.isGameRunning() &&
+                        this.hasEnoughConnectedPlayers()
+                    ) {
+                        if (!this.timerIsRunning()) {
+                            this.startGameTimer();
+                            this.startBroadcastTimer();
+                        }
+                    }
+                }
+            } else {
+                this.handleNewPlayerJoining(player);
+                this.putPlayerInWaitingList(player);
 
-    })
+                if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
+                    this.startGameTimer();
+                    this.startBroadcastTimer();
+                }
+            }
 
-    this.presence.subscribe('battle_state', (state) => {
-      if (state === 'endgame') {
-        this.state.gameRunning = false;
-        this.playingPlayers.clear();
+            this.broadcatsQueue();
+        });
 
-        if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
-          this.startGameTimer();
-          this.startBroadcastTimer();
-        }
+        this.presence.subscribe("battle_state", (state) => {
+            if (state === "endgame") {
+                this.state.gameRunning = false;
+                this.playingPlayers.clear();
 
-        const viewerSocket = Globals.viewerSocket;
-        if (!viewerSocket) {
-          return;
-        }
+                if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
+                    this.startGameTimer();
+                    this.startBroadcastTimer();
+                }
 
-        viewerSocket.emit('endgame');
-      }
-    })
+                const viewerSocket = Globals.viewerSocket;
+                if (!viewerSocket) {
+                    return;
+                }
 
-    console.log('Relay Room created');
-  }
+                viewerSocket.emit("endgame");
+            }
+        });
 
-  private timerIsRunning() {
-    return this.waitingListTimeout != null && this.waitingListTimer != undefined;
-  }
-
-  private startBroadcastTimer() {
-    this.waitingListMissingTime = Globals.GAME_WAITING_TIME;
-    this.waitingListTimer = setInterval(() => {
-      this.waitingListMissingTime -= 1000;
-      this.broadcast('timer', this.waitingListMissingTime);
-
-      const viewerSocket = Globals.viewerSocket;
-      if (!viewerSocket) {
-        return;
-      }
-
-      viewerSocket.emit('playingPlayers', JSON.stringify(this.getPlayersThatShouldStartPlaying()));
-      viewerSocket.emit('timer', this.waitingListMissingTime);
-
-    }, 1000);
-  }
-
-  private endBroadcastTimer() {
-    console.log('Ending waiting list timer');
-    clearInterval(this.waitingListTimer);
-  }
-
-  public onAuth(client: Client, options: any, request: http.IncomingMessage) {
-    return true;
-  }
-
-  public async onJoin(client: Client, options: any = {}) {
-    return true;
-  }
-
-  public async onLeave(client: Client, consented: boolean) {
-
-    let p: Player;
-    this.state.players.forEach((player, key) => {
-      if (player.sessionId === client.sessionId) {
-        p = player;
-      }
-    });
-
-    if (p) {
-      p.connected = false;
-      this.state.players.set(p.sub, p);
-
-      const leavingWaitingPlayer = this.waitingPlayers.find(waitinggPlayer => waitinggPlayer.sub === p.sub);
-      if (leavingWaitingPlayer) {
-        leavingWaitingPlayer.connected = false;
-      }
-
-      this.broadcatsQueue();
-      console.log(`${p.name} left relay`);
+        console.log("Relay Room created");
     }
 
-  }
-
-  private startGameTimer() {
-
-    if (this.waitingListTimeout) {
-      console.log('Clearing waiting list timeout');
-      clearTimeout(this.waitingListTimeout);
-      clearInterval(this.waitingListTimer);
+    private timerIsRunning() {
+        return (
+            this.waitingListTimeout != null &&
+            this.waitingListTimer != undefined
+        );
     }
 
-    console.log('Starting new waiting list timeout');
-    this.waitingListTimeout = setTimeout(() => {
-      if (this.shouldStartNewGame()) {
-        this.startNewGame();
-      } else {
-        this.startGameTimer();
-      }
-      this.waitingListTimeout = null;
-    }, Globals.GAME_WAITING_TIME + 500);
+    private startBroadcastTimer() {
+        this.waitingListMissingTime = Globals.GAME_WAITING_TIME;
+        this.waitingListTimer = setInterval(() => {
+            this.waitingListMissingTime -= 1000;
+            this.broadcast("timer", this.waitingListMissingTime);
 
-  }
+            const viewerSocket = Globals.viewerSocket;
+            if (!viewerSocket) {
+                return;
+            }
 
-  private broadcatsQueue() {
-    this.broadcast('queue', this.waitingPlayers.toArray()
-      .map(p => `${p.name}|${p.connected}|${p.avatar}`)
-    );
-  }
+            viewerSocket.emit(
+                "playingPlayers",
+                JSON.stringify(this.getPlayersThatShouldStartPlaying()),
+            );
+            viewerSocket.emit("timer", this.waitingListMissingTime);
+        }, 1000);
+    }
 
-  private startNewGame() {
-    console.log('Starting new game...');
-    this.state.gameRunning = true;
-    this.endBroadcastTimer();
+    private endBroadcastTimer() {
+        console.log("Ending waiting list timer");
+        clearInterval(this.waitingListTimer);
+    }
 
-    const waiting = this.waitingPlayers.toArray();
-    console.log(`players`, waiting.map(p => p.name));
+    public onAuth(client: Client, options: any, request: http.IncomingMessage) {
+        return true;
+    }
 
-    const newWaitingPlayersQueue = new Queue<Player>();
-    // let addedPlayers = 0;
+    public async onJoin(client: Client, options: any = {}) {
+        console.log("JOINED", client.sessionId);
+        return true;
+    }
 
-    Globals.playersForThisGame = Math.min(Globals.MAX_PLAYERS_NUMBER, waiting.length);
+    public async onLeave(client: Client, consented: boolean) {
+        let p: Player;
+        this.state.players.forEach((player, key) => {
+            if (player.sessionId === client.sessionId) {
+                p = player;
+            }
+        });
 
-    for (let i = 0; i < waiting.length; i++) {
+        if (p) {
+            p.connected = false;
+            this.state.players.set(p.sub, p);
 
-      const player:Player = waiting[i];
+            const leavingWaitingPlayer = this.waitingPlayers.find(
+                (waitinggPlayer) => waitinggPlayer.sub === p.sub,
+            );
+            if (leavingWaitingPlayer) {
+                leavingWaitingPlayer.connected = false;
+            }
 
-      if (!player) {
-        continue;
-      }
+            this.broadcatsQueue();
+            console.log(`${p.name} left relay`);
+        }
+    }
 
-      if (i < Globals.MAX_PLAYERS_NUMBER) {
-        this.playingPlayers.add(player);
-
-        const involvedClient = this.clients.find(client => client.sessionId === player.sessionId)
-        if (involvedClient) {
-          involvedClient.send("battle_ready");
+    private startGameTimer() {
+        if (this.waitingListTimeout) {
+            console.log("Clearing waiting list timeout");
+            clearTimeout(this.waitingListTimeout);
+            clearInterval(this.waitingListTimer);
         }
 
-      } else {
-        newWaitingPlayersQueue.enqueue(player);
-      }
-
+        console.log("Starting new waiting list timeout");
+        this.waitingListTimeout = setTimeout(() => {
+            if (this.shouldStartNewGame()) {
+                this.startNewGame();
+            } else {
+                this.startGameTimer();
+            }
+            this.waitingListTimeout = null;
+        }, Globals.GAME_WAITING_TIME + 500);
     }
 
-    this.presence.publish('battle_start', this.playingPlayers);
-
-    this.waitingPlayers = newWaitingPlayersQueue;
-
-  }
-
-  private getPlayersThatShouldStartPlaying() {
-    const waiting = this.waitingPlayers.toArray();
-    const numberOfPlayers = Math.min(Globals.MAX_PLAYERS_NUMBER, waiting.length);
-    // kind of deep copy ??
-    return waiting.slice(0, numberOfPlayers).map(p => ({...p}));
-  }
-
-  private putPlayerInWaitingList(player: Player) {
-    if (!this.waitingPlayers.has(p => p.sub === player.sub)) {
-      this.waitingPlayers.enqueue(player);
+    private broadcatsQueue() {
+        this.broadcast(
+            "queue",
+            this.waitingPlayers
+                .toArray()
+                .map((p) => `${p.name}|${p.connected}|${p.avatar}`),
+        );
     }
-  }
 
-  private playerIsInWaitingList(player: Player) {
-    return this.waitingPlayers.has(p => p.sub === player.sub);
-  }
+    private startNewGame() {
+        console.log("Starting new game...");
+        this.state.gameRunning = true;
+        this.endBroadcastTimer();
 
-  private handleNewPlayerJoining(player: Player) {
-    this.state.players.set(player.sub, player);
-    console.log(`${player.name} joined relay`);
-  }
+        const waiting = this.waitingPlayers.toArray();
+        console.log(
+            `players`,
+            waiting.map((p) => p.name),
+        );
 
-  private sendPlayerToBattle(client: Client) {
-    // if it is, tell the player client to reconnect to the game
-    client.send("battle_ready", true);
-  }
+        const newWaitingPlayersQueue = new Queue<Player>();
+        // let addedPlayers = 0;
 
-  private playerAlreadyExists(sub: string) {
-    return this.state.players.has(sub);
-  }
+        Globals.playersForThisGame = Math.min(
+            Globals.MAX_PLAYERS_NUMBER,
+            waiting.length,
+        );
 
-  private playerShouldEnterBattleOnConnect(player: Player) {
-    return this.isGameRunning() &&
-      Array.from(this.playingPlayers).filter(p => p.sub === player.sub).length > 0;
-  }
+        for (let i = 0; i < waiting.length; i++) {
+            const player: Player = waiting[i];
 
-  private handlePlayerReconnection(player: Player, client: Client) {
-    player = this.state.players.get(player.sub);
-    player.sessionId = client.sessionId;
-    player.connected = true;
-    console.log(`${player.name} reconnected`);
-    return player;
-  }
+            if (!player) {
+                continue;
+            }
 
-  private static createPlayerOnJoin(client: Client, sub, name, avatar: string) {
-    let player = new Player();
-    player.connected = true;
-    player.sessionId = client.sessionId;
-    player.sub = sub;
-    player.name = name;
-    player.avatar = avatar;
-    return player;
-  }
+            if (i < Globals.MAX_PLAYERS_NUMBER) {
+                this.playingPlayers.add(player);
 
-  private shouldStartNewGame() {
-    return !this.isGameRunning() && this.hasEnoughPlayers();
-  }
+                const involvedClient = this.clients.find(
+                    (client) => client.sessionId === player.sessionId,
+                );
+                if (involvedClient) {
+                    involvedClient.send("battle_ready");
+                }
+            } else {
+                newWaitingPlayersQueue.enqueue(player);
+            }
+        }
 
+        console.log("this.playingPlayers", this.playingPlayers);
+        this.presence.publish("battle_start", this.playingPlayers);
 
-  private isGameRunning() {
-    return this.state.gameRunning;
-  }
+        this.waitingPlayers = newWaitingPlayersQueue;
+    }
 
-  private hasEnoughPlayers() {
-    return this.waitingPlayers.size() >= Globals.MIN_PLAYERS_NUMBER;
-  }
+    private getPlayersThatShouldStartPlaying() {
+        const waiting = this.waitingPlayers.toArray();
+        const numberOfPlayers = Math.min(
+            Globals.MAX_PLAYERS_NUMBER,
+            waiting.length,
+        );
+        // kind of deep copy ??
+        return waiting.slice(0, numberOfPlayers).map((p) => ({ ...p }));
+    }
 
-  private hasEnoughConnectedPlayers() {
-    return this.waitingPlayers.toArray().filter(p => p.connected).length >= Globals.MIN_PLAYERS_NUMBER;
-  }
+    private putPlayerInWaitingList(player: Player) {
+        if (!this.waitingPlayers.has((p) => p.sub === player.sub)) {
+            this.waitingPlayers.enqueue(player);
+        }
+    }
 
-  onDispose() {
-    console.log('onDispose relay');
-  }
+    private playerIsInWaitingList(player: Player) {
+        return this.waitingPlayers.has((p) => p.sub === player.sub);
+    }
 
+    private handleNewPlayerJoining(player: Player) {
+        this.state.players.set(player.sub, player);
+        console.log(`${player.name} joined relay`);
+    }
+
+    private sendPlayerToBattle(client: Client) {
+        // if it is, tell the player client to reconnect to the game
+        client.send("battle_ready", true);
+    }
+
+    private playerAlreadyExists(sub: string) {
+        return this.state.players.has(sub);
+    }
+
+    private playerShouldEnterBattleOnConnect(player: Player) {
+        return (
+            this.isGameRunning() &&
+            Array.from(this.playingPlayers).filter((p) => p.sub === player.sub)
+                .length > 0
+        );
+    }
+
+    private handlePlayerReconnection(player: Player, client: Client) {
+        player = this.state.players.get(player.sub);
+        player.sessionId = client.sessionId;
+        player.connected = true;
+        console.log(`${player.name} reconnected`);
+        return player;
+    }
+
+    private static createPlayerOnJoin(
+        client: Client,
+        sub,
+        name,
+        avatar: string,
+    ) {
+        let player = new Player();
+        player.connected = true;
+        player.sessionId = client.sessionId;
+        player.sub = sub;
+        player.name = name;
+        player.avatar = avatar;
+        return player;
+    }
+
+    private shouldStartNewGame() {
+        return !this.isGameRunning() && this.hasEnoughPlayers();
+    }
+
+    private isGameRunning() {
+        return this.state.gameRunning;
+    }
+
+    private hasEnoughPlayers() {
+        return this.waitingPlayers.size() >= Globals.MIN_PLAYERS_NUMBER;
+    }
+
+    private hasEnoughConnectedPlayers() {
+        return (
+            this.waitingPlayers.toArray().filter((p) => p.connected).length >=
+            Globals.MIN_PLAYERS_NUMBER
+        );
+    }
+
+    onDispose() {
+        console.log("onDispose relay");
+    }
+}
+
+function handleCoreMessage(message:string) {
+    const coreState = parseCoreMessage(message);
+    console.log(`RELAY:`, coreState);
 }

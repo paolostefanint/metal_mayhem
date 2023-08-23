@@ -1,7 +1,7 @@
 import {matchMaker, Server} from "colyseus";
 import {BattleRoom} from "./src/battle.room";
 import http from "http";
-import {WebSocketTransport} from "@colyseus/ws-transport"
+import {WebSocketTransport} from "@colyseus/ws-transport";
 import {DropRelayRoom} from "./src/relay.room";
 import {enhanced_logging} from "./src/logging";
 import express from "express";
@@ -38,12 +38,12 @@ async function startViewerServer() {
   const server = http.createServer(app);
 
   const socketPath = process.env.NODE_ENV === 'production' 
-    ? "/viewersocket/socket.io" : "";
+                ? "/viewersocket/socket.io" : "";
 
   const io = new SocketIoServer(server, {
     path: socketPath,
     cors: {
-      origin: "*",
+        origin: "*",
       methods: ["GET", "POST"]
     }
   });

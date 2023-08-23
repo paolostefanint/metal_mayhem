@@ -1,100 +1,25 @@
-<DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Websocket</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-    </style>
-    <!-- Import p5.js from CDN-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"> </script>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="shortcut icon" type="image/ico" href="/src/assets/favicon.ico" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
+          integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
+    <title>Metal Mayhem</title>
+  </head>
+  <body>
+    <noscript>If you don't enable JS, one kitten in the world die.</noscript>
+    <div id="root"></div>
 
-    <script>
-        let socketIsConnected = false;
-
-        const canvasSize = 400;
-        
-        const socket = new WebSocket('ws://15.161.227.36:40020');
-        let ping = 0;
-        let lastPingTime = 0;
-        let players = [];
-
-        socket.addEventListener('open', function (event) {
-            console.log('Connected to WS Server');
-            socketIsConnected = true;
-            checkLatency();
-        });
-
-        socket.addEventListener("message", (event) => {
-            let message = event.data.toString();
-            if (message.startsWith("pong")) {
-                ping = +Date.now() - lastPingTime;
-                setTimeout(checkLatency, 100);
-            } 
-        });
-
-        function checkLatency() {
-            lastPingTime = +Date.now();
-            send("ping");
-        }
-
-        function setup() {
-            createCanvas(canvasSize, canvasSize);
-        }
-        
-        function draw() {
-            background(51);
-
-            stroke(255);
-
-            let movement = `0:0`;
-            let attack = `0`;
-            let playerId = 1;
-
-            fill(255);
-            noStroke()
-            textSize(15);
-            textAlign(LEFT, TOP);
-            text(`latency: ${ping}`, 10, 10);
-
-            if (mouseIsPressed) {
-
-                stroke(255);  
-                line(mouseX, mouseY, canvasSize / 2, canvasSize / 2);
-                // find and normalize the vector between the mouse and the center
-
-                const x = mouseX - canvasSize / 2;
-                const y = mouseY - canvasSize / 2;
-
-                const mag = Math.sqrt(x * x + y * y);
-                const normX = x / mag;
-                const normY = y / mag;
-
-
-                movement = `${normX}:${normY}` 
-            }         
-
-            if (keyIsPressed) {
-                attack = 1;
-            }
-
-            let data = `${playerId}|${movement}|${attack}`; 
-            send(data);
-
-        }
-
-        function send(data) {
-           if (socketIsConnected) {
-                socket.send(data);
-           } 
-        }
-
-
-    </script>
-</head>
-<body>
-    </body>
+    <script src="/src/index.tsx" type="module"></script>
+  </body>
 </html>

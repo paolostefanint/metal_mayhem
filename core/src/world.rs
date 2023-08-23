@@ -100,7 +100,6 @@ impl GameWorld {
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
-    pub current_time: f32,
     pub current_state: GamePhase,
     pub players: Vec<PlayerState>,
 }
@@ -154,97 +153,5 @@ impl GameWorld {
                 }
             }
         }
-
-        // for (key, entity) in self.entities.iter_mut() {
-        //     for (other_key, other_entity) in self.entities.iter_mut() {
-        //         if key != other_key {
-        //             entity.handle_collisions(other_entity);
-        //         }
-        //     }
-        // }
-
-        // add
-
-        // get all collisions
-
-        // if entity collides with other_entity
-        // entity.handle_collision(other_entity);
-
-        // handle collisions
-        //
-        // elements_colliding.handle_collision(other_element);
-
-        // update player aabb
-        // let mut collisions: Vec<(&CollisionItem, &CollisionItem, Axis)> = vec![];
-
-        // check collisions
-        // for i in 0..collision_items.len() {
-        //     for j in i..collision_items.len() {
-        //         let item = &collision_items[i];
-        //         let other = &collision_items[j];
-        //         if item.pid != other.pid {
-        //             if item.body.aabb.intersects(&other.body.aabb) {
-        //                 let axis = item.body.aabb.get_collision_axis(&other.body.aabb);
-
-        //                 println!("axis: {:?}", axis);
-
-        //                 // collisions.push((item, other, axis));
-        //             }
-        //         }
-        //     }
-        // }
-
-        // if collisions.len() > 0 {
-        //     // println!("collisions: {:?}", collisions);
-        //     for collision in collisions.iter() {
-        //         let mut players_iter = self.players.iter_mut();
-
-        //         match collision.0.pid {
-        //             Some(pid) => {
-        //                 let player = players_iter.find(|p| p.id == pid).unwrap();
-        //                 match collision.2 {
-        //                     Axis::X => {
-        //                         if player.position.0 < collision.1.body.aabb.center().0 {
-        //                             player.position.0 -= 0.1;
-        //                         } else {
-        //                             player.position.0 += 0.1;
-        //                         }
-        //                     }
-        //                     Axis::Y => {
-        //                         if player.position.1 < collision.1.body.aabb.center().1 {
-        //                             player.position.1 -= 0.1;
-        //                         } else {
-        //                             player.position.1 += 0.1;
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //             None => (),
-        //         }
-
-        //         match collision.1.pid {
-        //             Some(pid) => {
-        //                 let player = players_iter.find(|p| p.id == pid).unwrap();
-        //                 match collision.2 {
-        //                     Axis::X => {
-        //                         if player.position.0 < collision.0.body.aabb.center().0 {
-        //                             player.position.0 -= 0.1;
-        //                         } else {
-        //                             player.position.0 += 0.1;
-        //                         }
-        //                     }
-        //                     Axis::Y => {
-        //                         if player.position.1 < collision.0.body.aabb.center().1 {
-        //                             player.position.1 -= 0.1;
-        //                         } else {
-        //                             player.position.1 += 0.1;
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //             None => (),
-        //         }
-        //     }
-        // }
     }
 }
