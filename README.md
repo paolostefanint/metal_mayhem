@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/logo.png" title="Could this be the best gaming experience you've ever had?" alt="Metal Mayhem">
+    <img src="./assets/logo.jpg" title="Could this be the best gaming experience you've ever had?" alt="Metal Mayhem">
 </p>
 
 <!-- <p align="center" font-size="23"> --> 
