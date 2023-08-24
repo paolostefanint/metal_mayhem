@@ -96,6 +96,10 @@ impl GameWorld {
         });
         return players.collect();
     }
+    pub fn reset(&mut self) {
+        self.entities.clear();
+        self.current_time = Instant::now();
+    }
 }
 
 #[derive(Serialize, Deserialize)]

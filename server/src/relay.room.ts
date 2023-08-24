@@ -346,5 +346,5 @@ export class DropRelayRoom extends Room<RelayState> {
 
 function handleCoreMessage(message:string) {
     const coreState = parseCoreMessage(message);
-    console.log(`RELAY:`, coreState);
+    // console.log(`RELAY:`, coreState);
 }

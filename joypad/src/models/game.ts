@@ -1,1 +1,5 @@
-export interface SliderValuesPayload { military: number, production: number, research: number }
+
+export interface GameInputs {
+    movement: [numner, mumber],
+    attack: boolean
+}

@@ -6,10 +6,8 @@ export interface BattleInfoCurrentPlayer {
   sub: string
   avatar: string
   color: string
-  resources: number
-  score: number
-  development: number
-  milestones_reached: number
+  life: number
+  spriteState: string
 }
 
 export interface PlayerDetail {

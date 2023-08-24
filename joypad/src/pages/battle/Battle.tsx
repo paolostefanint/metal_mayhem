@@ -15,6 +15,7 @@ import {
   isLoadingRelayRoom
 } from "../../shared/helpers";
 import Intro from "./phases/Intro";
+import {GameInputs} from "../../models/game";
 
 const Battle = () => {
   const useAuth = useAuthState();
@@ -25,8 +26,8 @@ const Battle = () => {
     gameDispatch?.startGameLoop(useAuth?.user as User);
   }
 
-  const handleSliderChange = (values: {military: number, research: number, production: number}) => {
-    gameDispatch?.sendSliderValues(values);
+  const handleGameInputs = (values: GameInputs) => {
+    gameDispatch?.sendGameInputs(values);
   }
 
   return (
@@ -52,7 +53,7 @@ const Battle = () => {
           <>
             {isLoadingBattleRoom(gameState) && <span class={"text-white text-xl"}>Joining battle...</span>}
             {!isLoadingBattleRoom(gameState) && gameState?.errors.battleRoom && <ErrorMessage message={"Error joining battle room, please try again refreshing the page."}/>}
-            {!isLoadingBattleRoom(gameState) && !gameState?.errors.battleRoom && gameState?.currentPlayerStats !== null && <JoyPad onChange={handleSliderChange} playerStats={gameState?.currentPlayerStats as BattleInfoCurrentPlayer}/>}
+            {!isLoadingBattleRoom(gameState) && !gameState?.errors.battleRoom && gameState?.currentPlayerStats !== null && <JoyPad onChange={handleGameInputs} playerStats={gameState?.currentPlayerStats as BattleInfoCurrentPlayer}/>}
           </>
         )
       }

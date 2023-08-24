@@ -1,5 +1,6 @@
 import {Schema, ArraySchema, type, MapSchema} from "@colyseus/schema";
 
+
 export enum CoreStates {
     WaitingForPlayers = "WaitingForPlayers",
     RoundCountdown = "RoundCountdown",
@@ -9,7 +10,8 @@ export enum CoreStates {
 
 export enum GameStates {
     GAME_OVER = "GAME_OVER", 
-    RUNNING = "RUNNING"
+    RUNNING = "RUNNING",
+    GAME_ERROR = "GAME_ERROR",
 }
 
 export class PlayerPosition extends Schema {    
@@ -29,12 +31,13 @@ export class Player extends Schema {
     @type(PlayerPosition) position = new PlayerPosition();
     @type("string") direction: string;
     @type("string") score: number;
+    @type("string") spriteState: string;
 }
 
 export class GameState extends Schema {
-    @type("string") status: GameStates;
-    @type("number") time: number;
-    @type("number") remainingTime: number;
+    @type("string") status: GameStates = GameStates.GAME_OVER;
+    @type("number") time: number = 0;
+    @type("number") remainingTime: number = 0;
 }
 
 

@@ -42,6 +42,12 @@ pub struct Player {
     pub sprite_state: SpriteState,
 }
 
+pub enum Avatar {
+    Tizia,
+    Gundam,
+    Coso,
+}
+
 impl Player {
     pub fn new(player_configuration: &PlayerConfiguration) -> Player {
         Player {
@@ -49,10 +55,10 @@ impl Player {
             stats: PlayerStats {
                 attack: 0.0,
                 defense: 0.0,
-                max_speed: player_configuration.speed,
+                max_speed: 10.0,
                 health: 100.0,
             },
-            size: player_configuration.size,
+            size: (1.0, 0.5),
             position: player_configuration.initial_position,
             direction: Direction::R,
             input: PlayerInputs::new(),
@@ -188,9 +194,12 @@ impl PlayerInputs {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerConfiguration {
     pub player_id: u32,
+    pub name: String,
+    pub avatar: String,
+    pub color: String,
+    pub sub: String,
     pub initial_position: (f32, f32),
-    pub size: (f32, f32),
-    pub speed: f32,
 }

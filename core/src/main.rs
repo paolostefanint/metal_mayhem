@@ -1,18 +1,16 @@
 mod collisions;
-mod connections;
 mod game;
 mod input;
 mod map;
+mod output;
 mod player;
 mod render;
 mod stage;
 mod world;
 
-use connections::start_client_connections;
 use game::Game;
-use input::{start_player_listening_websocket, start_server_listening_websocket};
-use player::{Player, PlayerConfiguration};
-use render::render;
+use input::start_server_listening_websocket;
+use output::start_client_connections;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -46,62 +44,69 @@ async fn main() {
 
     loop {
         let received = rx.recv().unwrap();
-        println!("Received: {:?}", received.command);
 
         match received.command {
-            ServerCommand::Start => start_game(game_arc.clone()),
+            ServerCommand::Start => start_game(game_arc.clone(), received.data),
             ServerCommand::Stop => stop_game(game_arc.clone()),
-            ServerCommand::PlayerInput => {
-                println!("Player input");
-            }
+            ServerCommand::PlayerInput => handle_input(game_arc.clone(), &received.data),
         }
     }
 }
 
-fn start_game(game: Arc<Mutex<Game>>) {
-    println!("Starting game");
-    // once the match should be starting, init the gamie
+fn handle_input(game: Arc<Mutex<Game>>, data: &String) {
+    let splitted_data = data.split("|").collect::<Vec<&str>>();
+    let player_id = splitted_data.get(0).unwrap().parse::<u32>().unwrap();
+    let input = splitted_data.get(1).unwrap();
 
-    // // Add player
-    // let player1_conf = PlayerConfiguration {
-    //     player_id: 1,
-    //     initial_position: (5.0, 10.0),
-    //     size: (1.0, 0.5),
-    //     speed: 3.0,
-    // };
-    // let player1: Player = Player::new(&player1_conf);
+    // remove first and last character from input
+    let input = &input[1..input.len() - 1];
+    let input = input.split(",").collect::<Vec<&str>>();
 
-    // let player2_conf = PlayerConfiguration {
-    //     player_id: 2,
-    //     initial_position: (10.0, 5.0),
-    //     size: (1.0, 0.5),
-    //     speed: 3.0,
-    // };
-    // let player2: Player = Player::new(&player2_conf);
+    let movement = (
+        input.get(0).unwrap().parse::<f32>().unwrap(),
+        input.get(1).unwrap().parse::<f32>().unwrap(),
+    );
+    let attack_string = input.get(2).unwrap();
+    let attack = attack_string.parse::<u32>().unwrap();
+    let attack = match attack {
+        0 => false,
+        1 => true,
+        _ => false,
+    };
 
-    // let player3_conf = PlayerConfiguration {
-    //     player_id: 3,
-    //     initial_position: (20.0, 5.0),
-    //     size: (1.0, 0.5),
-    //     speed: 3.0,
-    // };
-    // let player3: Player = Player::new(&player3_conf);
+    let mut game_ref = game.lock().unwrap();
+    if game_ref.is_running() {
+        println!("PlayerId: {:?}, input: {:?}", player_id, input);
+        game_ref.handle_input(player_id, movement, attack);
+    }
 
-    // game.add_player(player1);
-    // game.add_player(player2);
-    // game.add_player(player3);
+    // let mut game_ref = game.lock().unwrap();
+    // game_ref.handle_input(data);
+}
 
-    // INPUT
-    //
-    //
-    // let game = game_arc.clone();
-    // let _ = start_player_listening_websocket(game).await;
+fn start_game(game: Arc<Mutex<Game>>, data: String) {
+    let players_configs = serde_json::from_str::<Vec<player::PlayerConfiguration>>(&data).unwrap();
+
+    println!("Starting game with {:?} players", players_configs.len());
+    println!(
+        "Players: {:?}",
+        players_configs
+            .iter()
+            .map(|p| p.name.clone())
+            .collect::<Vec<String>>()
+    );
 
     // WEBSOCKET CONNECTIONS
     //
     let game = game.clone();
     let mut game_ref = game.lock().unwrap();
     game_ref.start();
+
+    // add players
+    for player_conf in players_configs {
+        let player = player::Player::new(&player_conf);
+        game_ref.add_player(player);
+    }
 
     let game = game.clone();
 
@@ -110,22 +115,14 @@ fn start_game(game: Arc<Mutex<Game>>) {
             {
                 let mut game = game.lock().unwrap();
                 if !game.is_running() {
-                    break;
+                    println!("Game stopped");
+                    return;
                 }
                 game.update();
             }
-            // {
-            //     let world = world_arc.lock().unwrap();
-            //     println!("world");
-            //     render(&world);
-            // }
-
-            // thread::sleep(Duration::from_millis(100));
             tokio::time::sleep(Duration::from_millis(1000 / 20)).await;
         }
     });
-
-    // let _c = start_client_connections(game).await;
 }
 
 fn stop_game(game: Arc<Mutex<Game>>) {

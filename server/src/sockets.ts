@@ -39,7 +39,9 @@ function createCoreSendingSocket(): SendingSocket {
 
     return {
         send: message => {
+            
             console.log("Sending message", message);
+
             if (ws.readyState !== WebSocket.OPEN) {
                 console.log('Sending Socket Not Ready');
                 return;
@@ -64,6 +66,7 @@ function createCoreListeningSocket(): EventEmitter {
         });
         ws.on('close', (hadErr) => {
             console.log('Listening Socket Closed: ' + hadErr);
+            messageEmitter.emit('close');
             setTimeout(() => {
                 startServer();
             }, 5000)
