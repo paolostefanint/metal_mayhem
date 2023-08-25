@@ -1,10 +1,9 @@
-# build
 FROM node:alpine
-
-VOLUME /tmp/sockets
 
 COPY . /server
 WORKDIR /server
+
+RUN rm .env
 
 RUN npm install
 

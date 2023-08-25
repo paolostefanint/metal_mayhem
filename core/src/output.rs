@@ -9,7 +9,7 @@ use tokio_websockets::{Error, Message, ServerBuilder};
 
 pub async fn start_client_connections(game: Arc<Mutex<Game>>) -> Result<(), Error> {
     println!("Start client connections thread begin on port :42000");
-    let listener = TcpListener::bind("127.0.0.1:42000").await?;
+    let listener = TcpListener::bind("0.0.0.0:42000").await?;
 
     tokio::spawn(async move {
         while let Ok((stream, _)) = listener.accept().await {

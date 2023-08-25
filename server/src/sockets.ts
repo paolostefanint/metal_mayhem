@@ -3,19 +3,18 @@ import * as dotenv from "dotenv";
 import {EventEmitter} from "events";
 import {getRoomLogger, LogLevel} from "./logging";
 
-
 dotenv.config();
-
-const SOCKET_TO_NODE = process.env.SOCKET_TO_NODE;
-const SOCKET_FROM_NODE = process.env.SOCKET_FROM_NODE;
 
 export interface SendingSocket {
     send: (message: string) => void;
 }
 
+const CORE_SENDING_ADDRESS = process.env.CORE_SENDING_ADDRESS || "ws://0.0.0.0:40010";
+const CORE_RECEIVING_ADDRESS = process.env.CORE_RECEIVING_ADDRESS || "ws://0.0.0.0:42000";
+
 function createCoreSendingSocket(): SendingSocket {
     
-    let coreAddress = "ws://127.0.0.1:40010"
+    let coreAddress = CORE_SENDING_ADDRESS; 
     let ws: WebSocket;
 
     const logger = getRoomLogger("CORE_SENDING_SOCKET", LogLevel.DEBUG)
@@ -56,7 +55,7 @@ function createCoreSendingSocket(): SendingSocket {
 function createCoreListeningSocket(): EventEmitter { 
 
     let messageEmitter = new EventEmitter();
-    let coreAddress = "ws://127.0.0.1:42000";
+    let coreAddress = CORE_RECEIVING_ADDRESS;
     const logger = getRoomLogger("CORE_LISTENING_SOCKET", LogLevel.DEBUG)
 
     const startServer = () => {

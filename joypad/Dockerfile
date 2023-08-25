@@ -6,8 +6,11 @@ WORKDIR /app
 
 COPY ./ .
 RUN rm .env.local
-RUN echo "VITE_MULTIPLAYER_HOST_GAME=wss://d2bz1cokb81olu.cloudfront.net/server" > .env.production
-RUN echo "VITE_MULTIPLAYER_HOST_VIEWER=wss://d2bz1cokb81olu.cloudfront.net" >> .env.production
+
+RUN touch .env.production
+RUN echo "VITE_MULTIPLAYER_HOST_GAME=ws://localhost:7000" >> .env.production
+
+
 RUN pnpm i
 RUN npm run build
 
@@ -17,5 +20,5 @@ COPY src/assets/drone.png /app/dist/assets/drone.png
 
 WORKDIR /app/dist
 
-CMD ["npx", "serve", "-p", "7002"]
+CMD ["npx", "serve", "-p", "3000"]
 
