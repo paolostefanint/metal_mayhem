@@ -22,8 +22,8 @@ const Battle = () => {
   const gameDispatch = useGameDispatch();
   const gameState = useGameState();
 
-  const joinLobby = () => {
-    gameDispatch?.startGameLoop(useAuth?.user as User);
+  const joinLobby = (selectedCharacter:number) => {
+    gameDispatch?.startGameLoop(useAuth?.user as User, selectedCharacter);
   }
 
   const handleGameInputs = (values: GameInputs) => {

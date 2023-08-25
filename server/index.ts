@@ -7,6 +7,7 @@ import {enhanced_logging} from "./src/logging";
 import express from "express";
 import {Server as SocketIoServer} from "socket.io"
 import {Globals} from "./src/global";
+import { getRoomLogger, LogLevel } from "./src/logging";
 
 const multiplayerServerPort = Number(process.env.port) || 7000;
 const viewerServerPort = Number(process.env.port) || 7001;
@@ -34,6 +35,7 @@ async function startViewerServer() {
 
   const app = express();
   app.use(express.json());
+  const logger = getRoomLogger("VIEWER_SOCKET", LogLevel.DEBUG)
 
   const server = http.createServer(app);
 
@@ -49,8 +51,8 @@ async function startViewerServer() {
   });
 
   io.on('connection', socket => {
-    console.log('viewer connected');
     Globals.viewerSocket = socket;
+    logger.log("Viewer connected");
   })
 
   return server.listen(viewerServerPort);

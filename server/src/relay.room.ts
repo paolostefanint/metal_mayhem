@@ -1,11 +1,19 @@
 import { Client, Room } from "colyseus";
 import { Queue } from "./queue";
 import http from "http";
-import { Player, RelayState } from "./state";
-import { coreListeningSocket } from "./sockets";
+import { Player, PresenceMessages, RelayState } from "./state";
 import { Globals } from "./global";
 import { createPacketSizeTicker } from "./packet-size-ticker";
-import { parseCoreMessage } from "./message-handling";
+import { GameStates } from "./state";
+import { getRoomLogger, LogLevel } from "./logging";
+
+export interface PlayerInitData {
+    client: Client;
+    sub: string;
+    name: string;
+    avatar: string;
+    pic: string;
+}
 
 export class DropRelayRoom extends Room<RelayState> {
     // tslint:disable-line
@@ -22,6 +30,8 @@ export class DropRelayRoom extends Room<RelayState> {
 
     packetSizeTicker = createPacketSizeTicker();
 
+    logger = getRoomLogger("RELAY", LogLevel.DEBUG);
+
     public onCreate(
         _options: Partial<{
             maxClients: number;
@@ -29,93 +39,79 @@ export class DropRelayRoom extends Room<RelayState> {
             metadata: any;
         }>,
     ) {
-        console.log("Creating Relay Room...");
+        this.logger.log("Creating Relay Room...");
 
         this.setState(new RelayState());
 
-        coreListeningSocket.on("message", (data: ArrayBuffer) => {
-            this.packetSizeTicker(data);
+        this.onMessage("identity", this.handleNewIdentity.bind(this));
 
-            const message = data.toString();
+        this.presence.subscribe(
+            PresenceMessages.BATTLE_STATE,
+            (state: GameStates) => {
+                this.state.status = state;
 
-            handleCoreMessage(message);
+                this.logger.log("RELAY: changed state to", state);
 
-            if (message.startsWith("gameover")) {
-                this.state.gameRunning = false;
-            }
-
-            // incomingMessages
-            //   .filter(message => message.length > 0)
-            //   .forEach(message => {
-            //     if (message.startsWith("*endgame:")) {
-            //       this.state.gameRunning = false;
-            //     }
-            //   })
-        });
-
-        this.onMessage("identity", (client, data) => {
-            const [sub, name, avatar] = data.split("#");
-
-            console.log(`RELAY: got player identity`, sub, name, avatar);
-
-            let player = DropRelayRoom.createPlayerOnJoin(
-                client,
-                sub,
-                name,
-                avatar,
-            );
-
-            if (this.playerAlreadyExists(sub)) {
-                player = this.handlePlayerReconnection(player, client);
-
-                if (this.playerShouldEnterBattleOnConnect(player)) {
-                    this.sendPlayerToBattle(client);
-                } else {
-                    this.putPlayerInWaitingList(player);
+                if (state === GameStates.GAME_OVER) {
+                    this.logger.log("clearing players");
+                    this.playingPlayers = new Set<Player>();
 
                     if (
                         !this.isGameRunning() &&
                         this.hasEnoughConnectedPlayers()
                     ) {
-                        if (!this.timerIsRunning()) {
-                            this.startGameTimer();
-                            this.startBroadcastTimer();
-                        }
+                        this.startGameTimer();
+                        this.startBroadcastTimer();
                     }
                 }
+            },
+        );
+
+        this.logger.log("Relay Room created");
+    }
+
+    private handleNewIdentity(client: Client, data: string) {
+        const [sub, name, avatar, pic] = data.split("#");
+
+        this.logger.log(`got player identity`, sub, name);
+        const playerInitData: PlayerInitData = {
+            client,
+            sub,
+            name,
+            pic,
+            avatar,
+        };
+
+        let player = DropRelayRoom.createPlayerOnJoin(playerInitData);
+
+        if (this.playerAlreadyExists(sub)) {
+            this.logger.log("Player already exists, reconnecting...");
+            player = this.handlePlayerReconnection(player, client);
+
+            if (this.playerShouldEnterBattleOnConnect(player)) {
+                this.logger.log("Player should enter battle on connect");
+                this.sendPlayerToBattle(client);
             } else {
-                this.handleNewPlayerJoining(player);
                 this.putPlayerInWaitingList(player);
 
                 if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
-                    this.startGameTimer();
-                    this.startBroadcastTimer();
+                    if (!this.timerIsRunning()) {
+                        this.startGameTimer();
+                        this.startBroadcastTimer();
+                    }
                 }
             }
+        } else {
+            this.handleNewPlayerJoining(player);
+            this.putPlayerInWaitingList(player);
 
-            this.broadcatsQueue();
-        });
-
-        this.presence.subscribe("battle_state", (state) => {
-            if (state === "endgame") {
-                this.state.gameRunning = false;
-                this.playingPlayers.clear();
-
-                if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
-                    this.startGameTimer();
-                    this.startBroadcastTimer();
-                }
-
-                const viewerSocket = Globals.viewerSocket;
-                if (!viewerSocket) {
-                    return;
-                }
-
-                viewerSocket.emit("endgame");
+            if (!this.isGameRunning() && this.hasEnoughConnectedPlayers()) {
+                this.startGameTimer();
+                this.startBroadcastTimer();
             }
-        });
+        }
 
-        console.log("Relay Room created");
+        this.broadcatsQueue();
     }
 
     private timerIsRunning() {
@@ -130,22 +126,15 @@ export class DropRelayRoom extends Room<RelayState> {
         this.waitingListTimer = setInterval(() => {
             this.waitingListMissingTime -= 1000;
             this.broadcast("timer", this.waitingListMissingTime);
-
-            const viewerSocket = Globals.viewerSocket;
-            if (!viewerSocket) {
-                return;
-            }
-
-            viewerSocket.emit(
-                "playingPlayers",
-                JSON.stringify(this.getPlayersThatShouldStartPlaying()),
+            this.presence.publish(
+                "round_countdown",
+                this.waitingListMissingTime / 1000,
             );
-            viewerSocket.emit("timer", this.waitingListMissingTime);
         }, 1000);
     }
 
     private endBroadcastTimer() {
-        console.log("Ending waiting list timer");
+        this.logger.log("Ending waiting list timer");
         clearInterval(this.waitingListTimer);
     }
 
@@ -154,7 +143,7 @@ export class DropRelayRoom extends Room<RelayState> {
     }
 
     public async onJoin(client: Client, options: any = {}) {
-        console.log("JOINED", client.sessionId);
+        this.logger.log("JOINED", client.sessionId);
         return true;
     }
 
@@ -178,18 +167,18 @@ export class DropRelayRoom extends Room<RelayState> {
             }
 
             this.broadcatsQueue();
-            console.log(`${p.name} left relay`);
+            this.logger.log(`${p.name} left relay`);
         }
     }
 
     private startGameTimer() {
         if (this.waitingListTimeout) {
-            console.log("Clearing waiting list timeout");
+            this.logger.log("Clearing waiting list timeout");
             clearTimeout(this.waitingListTimeout);
             clearInterval(this.waitingListTimer);
         }
 
-        console.log("Starting new waiting list timeout");
+        this.logger.log("Starting new waiting list timeout");
         this.waitingListTimeout = setTimeout(() => {
             if (this.shouldStartNewGame()) {
                 this.startNewGame();
@@ -205,17 +194,15 @@ export class DropRelayRoom extends Room<RelayState> {
             "queue",
             this.waitingPlayers
                 .toArray()
-                .map((p) => `${p.name}|${p.connected}|${p.avatar}`),
+                .map((p) => `${p.name}|${p.connected}|${p.avatar}|${p.pic}`),
         );
     }
 
     private startNewGame() {
-        console.log("Starting new game...");
-        this.state.gameRunning = true;
         this.endBroadcastTimer();
 
         const waiting = this.waitingPlayers.toArray();
-        console.log(
+        this.logger.log(
             `players`,
             waiting.map((p) => p.name),
         );
@@ -249,8 +236,12 @@ export class DropRelayRoom extends Room<RelayState> {
             }
         }
 
-        console.log("this.playingPlayers", this.playingPlayers);
-        this.presence.publish("battle_start", this.playingPlayers);
+        this.logger.log("this.playingPlayers", Array.from(this.playingPlayers).map((p) => p.name));
+
+        this.presence.publish(
+            PresenceMessages.BATTLE_PLAYERS,
+            this.playingPlayers,
+        );
 
         this.waitingPlayers = newWaitingPlayersQueue;
     }
@@ -277,7 +268,7 @@ export class DropRelayRoom extends Room<RelayState> {
 
     private handleNewPlayerJoining(player: Player) {
         this.state.players.set(player.sub, player);
-        console.log(`${player.name} joined relay`);
+        this.logger.log(`${player.name} joined relay`);
     }
 
     private sendPlayerToBattle(client: Client) {
@@ -301,22 +292,18 @@ export class DropRelayRoom extends Room<RelayState> {
         player = this.state.players.get(player.sub);
         player.sessionId = client.sessionId;
         player.connected = true;
-        console.log(`${player.name} reconnected`);
+        this.logger.log(`${player.name} reconnected`);
         return player;
     }
 
-    private static createPlayerOnJoin(
-        client: Client,
-        sub,
-        name,
-        avatar: string,
-    ) {
+    private static createPlayerOnJoin(playerInitData: PlayerInitData) {
         let player = new Player();
         player.connected = true;
-        player.sessionId = client.sessionId;
-        player.sub = sub;
-        player.name = name;
-        player.avatar = avatar;
+        player.sessionId = playerInitData.client.sessionId;
+        player.sub = playerInitData.sub;
+        player.name = playerInitData.name;
+        player.avatar = playerInitData.avatar;
+        player.pic = playerInitData.pic;
         return player;
     }
 
@@ -325,7 +312,7 @@ export class DropRelayRoom extends Room<RelayState> {
     }
 
     private isGameRunning() {
-        return this.state.gameRunning;
+        return this.state.status === GameStates.RUNNING;
     }
 
     private hasEnoughPlayers() {
@@ -340,11 +327,6 @@ export class DropRelayRoom extends Room<RelayState> {
     }
 
     onDispose() {
-        console.log("onDispose relay");
+        this.logger.log("onDispose relay");
     }
-}
-
-function handleCoreMessage(message:string) {
-    const coreState = parseCoreMessage(message);
-    // console.log(`RELAY:`, coreState);
 }

@@ -35,6 +35,7 @@ pub struct PlayerStats {
 pub struct Player {
     pub id: u32,
     pub stats: PlayerStats,
+    pub avatar: Avatar,
     pub size: (f32, f32),
     pub position: (f32, f32),
     pub input: PlayerInputs,
@@ -42,22 +43,53 @@ pub struct Player {
     pub sprite_state: SpriteState,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum Avatar {
     Tizia,
     Gundam,
     Coso,
 }
 
+impl Default for Avatar {
+    fn default() -> Self {
+        Avatar::Tizia
+    }
+}
+
 impl Player {
     pub fn new(player_configuration: &PlayerConfiguration) -> Player {
-        Player {
-            id: player_configuration.player_id,
-            stats: PlayerStats {
-                attack: 0.0,
-                defense: 0.0,
+        let avatar = match player_configuration.avatar {
+            1 => Avatar::Tizia,
+            2 => Avatar::Gundam,
+            3 => Avatar::Coso,
+            _ => Avatar::Tizia,
+        };
+
+        let stats = match avatar {
+            Avatar::Tizia => PlayerStats {
+                attack: 10.0,
+                defense: 10.0,
                 max_speed: 10.0,
                 health: 100.0,
             },
+            Avatar::Gundam => PlayerStats {
+                attack: 20.0,
+                defense: 20.0,
+                max_speed: 10.0,
+                health: 100.0,
+            },
+            Avatar::Coso => PlayerStats {
+                attack: 30.0,
+                defense: 30.0,
+                max_speed: 10.0,
+                health: 100.0,
+            },
+        };
+
+        Player {
+            id: player_configuration.player_id,
+            stats,
+            avatar,
             size: (1.0, 0.5),
             position: player_configuration.initial_position,
             direction: Direction::R,
@@ -198,7 +230,8 @@ impl PlayerInputs {
 pub struct PlayerConfiguration {
     pub player_id: u32,
     pub name: String,
-    pub avatar: String,
+    pub avatar: u8,
+    pub pic: String,
     pub color: String,
     pub sub: String,
     pub initial_position: (f32, f32),

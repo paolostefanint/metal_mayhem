@@ -5,7 +5,6 @@ mod map;
 mod output;
 mod player;
 mod render;
-mod stage;
 mod world;
 
 use game::Game;

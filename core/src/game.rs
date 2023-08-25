@@ -62,7 +62,6 @@ impl Game {
         match self.started_at {
             Some(started_at) => {
                 let elapsed = started_at.elapsed();
-                println!("Elapsed: {:?}", elapsed);
                 elapsed.as_secs() >= ROUND_DURATION
             }
             None => true,

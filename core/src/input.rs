@@ -25,7 +25,7 @@ pub async fn start_server_listening_websocket(
             while let Some(msg) = ws_stream.next().await {
                 match msg {
                     Ok(msg) => {
-                        println!("Received a message from the server: {:?}", msg);
+                        // println!("Received a message from the server: {:?}", msg);
 
                         let text_message = match msg.as_text() {
                             Ok(text) => text,

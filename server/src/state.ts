@@ -1,5 +1,9 @@
 import {Schema, ArraySchema, type, MapSchema} from "@colyseus/schema";
 
+export enum PresenceMessages {
+    BATTLE_PLAYERS = "battle_players",
+    BATTLE_STATE = "battle_state"
+}
 
 export enum CoreStates {
     WaitingForPlayers = "WaitingForPlayers",
@@ -9,6 +13,7 @@ export enum CoreStates {
 }
 
 export enum GameStates {
+    WAITING_FOR_PLAYERS = "WAITING_FOR_PLAYERS",
     GAME_OVER = "GAME_OVER", 
     RUNNING = "RUNNING",
     GAME_ERROR = "GAME_ERROR",
@@ -26,6 +31,7 @@ export class Player extends Schema {
     @type("string") sessionId: string;
     @type("string") sub: string;
     @type("string") color: string;
+    @type("string") pic: string;
     @type("string") avatar: string;
     @type("int32") life: number;
     @type(PlayerPosition) position = new PlayerPosition();
@@ -38,6 +44,7 @@ export class GameState extends Schema {
     @type("string") status: GameStates = GameStates.GAME_OVER;
     @type("number") time: number = 0;
     @type("number") remainingTime: number = 0;
+    @type("number") roundCountdown: number = 0;
 }
 
 
@@ -48,5 +55,5 @@ export class ClientState extends Schema {
 
 export class RelayState extends Schema {
     @type({map: Player}) players = new MapSchema<Player>();
-    @type("boolean") gameRunning: boolean = false;
+    @type("string") status: GameStates = GameStates.GAME_OVER;
 }

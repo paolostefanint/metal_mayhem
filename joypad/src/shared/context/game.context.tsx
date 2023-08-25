@@ -21,14 +21,14 @@ import { GameInputs } from "../../models/game";
 
 interface GameDispatchContext {
     init: () => Promise<void>;
-    startGameLoop: (user: User) => Promise<void>;
-    joinRelayRoom: (user: User) => Promise<void>;
+    startGameLoop: (user: User, selectedCharacter:number) => Promise<void>;
+    joinRelayRoom: (user: User, selectedCharacter:number) => Promise<void>;
     waitForBattleReady: () => Promise<void>;
     waitForBattleStart: () => Promise<void>;
     clearBattleRoomOnStorage: () => void;
     werePlayingAGame: () => boolean;
     saveBattleSessionOnStorage: () => void;
-    joinBattleRoom: (user: User) => Promise<void>;
+    joinBattleRoom: (user: User, selectedCharacter:number) => Promise<void>;
     sendGameInputs: (inputs: GameInputs) => void;
 }
 
@@ -94,12 +94,12 @@ const GameProvider = (props: GameProviderProps) => {
         setStore("bootstrapped", true);
     };
 
-    const startGameLoop = async (user: User) => {
+    const startGameLoop = async (user: User, selectedCharacter:number) => {
         try {
             setStore("ui", "queue");
 
             console.log("Joining relay room...");
-            await joinRelayRoom(user);
+            await joinRelayRoom(user, selectedCharacter);
 
             console.log("Waiting for enough players...");
             await waitForBattleReady();
@@ -107,7 +107,7 @@ const GameProvider = (props: GameProviderProps) => {
             setStore("ui", "playing");
 
             console.log("Joining battle room...");
-            await joinBattleRoom(user);
+            await joinBattleRoom(user, selectedCharacter);
 
             console.log("Waiting for start battle message...");
             await waitForBattleStart();
@@ -136,11 +136,6 @@ const GameProvider = (props: GameProviderProps) => {
                 setStore("currentPlayerStats", (oldValue) => {
                     return {
                         ...oldValue,
-                        resources: currentPlayer.resources || 0,
-                        score: currentPlayer.score || 0,
-                        development: currentPlayer.development || 0,
-                        milestones_reached:
-                            currentPlayer.milestones_reached || 0,
                         color: currentPlayer.color,
                     };
                 });
@@ -148,7 +143,7 @@ const GameProvider = (props: GameProviderProps) => {
         });
     };
 
-    const joinRelayRoom = async (user: User) => {
+    const joinRelayRoom = async (user: User, selectedCharacter:number) => {
         console.log("Start joining relay room");
 
         const relayRoom = await gameClient()
@@ -177,7 +172,7 @@ const GameProvider = (props: GameProviderProps) => {
             console.log("sending identity");
             store.relayRoom?.send(
                 RELAY_ROOM.IDENTITY,
-                buildIdentityString(user),
+                buildIdentityString(user, selectedCharacter),
             );
             console.log("Joined lobby");
 
@@ -205,10 +200,10 @@ const GameProvider = (props: GameProviderProps) => {
 
     const waitForEndGame = async () => {
         return await new Promise<void>((resolve) => {
-            store.battleRoom?.onMessage(BATTLE_ROOM.END_GAME, () => {
+            store.battleRoom?.onMessage(BATTLE_ROOM.BATTLE_END, () => {
                 console.log("Battle ended");
                 store.battleRoom?.leave();
-                setStore("relayQueue", (old) => []);
+                setStore("relayQueue", (_old) => []);
                 setStore("ui", "ended");
                 resolve();
             });
@@ -240,7 +235,7 @@ const GameProvider = (props: GameProviderProps) => {
             );
     };
 
-    const joinBattleRoom = async (user: User) => {
+    const joinBattleRoom = async (user: User, selectedCharacter:number) => {
         if (werePlayingAGame()) {
             const sessionId =
                 localStorage.getItem(LOCALSTORAGE.BATTLE_SESSION_ID) || "";
@@ -285,11 +280,11 @@ const GameProvider = (props: GameProviderProps) => {
 
         saveBattleSessionOnStorage();
 
-        store.battleRoom?.send(BATTLE_ROOM.IDENTITY, buildIdentityString(user));
+        store.battleRoom?.send(BATTLE_ROOM.IDENTITY, buildIdentityString(user, selectedCharacter));
     };
 
-    const buildIdentityString = (user: User) => {
-        return `${user.sub}#${user.nickname}#${user.picture}`;
+    const buildIdentityString = (user: User, selectedCharacter: number) => {
+        return `${user.sub}#${user.nickname}#${selectedCharacter}#${user.picture}`;
     };
 
     const sendGameInputs = ({ movement, attack }: GameInputs) => {
