@@ -17,7 +17,7 @@ pub struct Game {
     world: GameWorld,
 }
 
-const ROUND_DURATION: u64 = 10;
+const ROUND_DURATION: u64 = 10000;
 
 impl Game {
     pub fn new(world_size: (f32, f32)) -> Game {

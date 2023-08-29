@@ -6,6 +6,7 @@ import { formatNextMatchInSeconds } from "../../../shared/helpers";
 import { MAX_PLAYERS, MIN_PLAYERS } from "../../../shared/constants";
 import { PlayerDetail } from "../../../models/user";
 import PlayerImageRounded from "../../../shared/components/PlayerImageRounded";
+import AvatarImageRounded from "../../../shared/components/AvatarImageRounded";
 
 interface QueueProps {
     players?: string[];
@@ -22,10 +23,11 @@ const PlayerRow = (props: { player: PlayerDetail; highlight: boolean }) => {
                 highlight
                     ? "bg-semitransparent-acquamarine"
                     : "bg-semitransparent-grey"
-            } rounded-[45px] p-1`}
+            } rounded-[15px] p-1 justify-between`}
         >
             <PlayerImageRounded player={player} />
             <span class={"text-white"}>{player.name}</span>
+            <AvatarImageRounded player={player} />
         </li>
     );
 };
@@ -58,6 +60,7 @@ const Queue = (props: QueueProps) => {
                         result[chunkIndex] = [];
                     }
 
+                    console.log("item", item);
                     result[chunkIndex].push(detail(item));
 
                     return result;
@@ -108,7 +111,7 @@ const Queue = (props: QueueProps) => {
 
             <div
                 class={
-                    "text-white text-sm blue-rounded-container border-1 fixed bottom-0 left-0 right-0 px-5 py-8 flex items-center justify-between"
+                    "text-white text-sm blue-rounded-container border-1 fixed bottom-0 left-0 right-0 px-5 py-4 flex items-center justify-between"
                 }
             >
                 <div>
@@ -124,11 +127,13 @@ const Queue = (props: QueueProps) => {
 
                     <Show when={gameState && gameState?.relayTimer >= 0}>
                         <div>
-                            <p class={"text-grey"}>Prossima partita tra:</p>
-                            <p class={"text-xl"}>
-                                {formatNextMatchInSeconds(
-                                    gameState!.relayTimer,
-                                )}
+                            <p class={"text-grey"}>
+                                Prossima partita tra:
+                                <span class={"text-xl text-white pl-5"}>
+                                    {formatNextMatchInSeconds(
+                                        gameState!.relayTimer,
+                                    )}
+                                </span>
                             </p>
                         </div>
                     </Show>
@@ -139,9 +144,11 @@ const Queue = (props: QueueProps) => {
                         }
                     >
                         <div>
-                            <p class={"text-grey"}>In attesa di giocatori...</p>
-                            <p class={"text-xl"}>
-                                {props.players?.length} / {MIN_PLAYERS}
+                            <p class={"text-grey"}>
+                                In attesa di giocatori...
+                                <span class={"text-xl text-white pl-5"}>
+                                    {props.players?.length} / {MIN_PLAYERS}
+                                </span>
                             </p>
                         </div>
                     </Show>

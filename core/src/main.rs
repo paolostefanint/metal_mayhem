@@ -84,6 +84,7 @@ fn handle_input(game: Arc<Mutex<Game>>, data: &String) {
 }
 
 fn start_game(game: Arc<Mutex<Game>>, data: String) {
+    println!("Incoming start data: {:?}", data);
     let players_configs = serde_json::from_str::<Vec<player::PlayerConfiguration>>(&data).unwrap();
 
     println!("Starting game with {:?} players", players_configs.len());

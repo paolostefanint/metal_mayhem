@@ -3,7 +3,7 @@ FROM node:alpine
 COPY . /server
 WORKDIR /server
 
-RUN rm .env
+RUN [ -f .env ] && rm .env || true
 
 RUN npm install
 

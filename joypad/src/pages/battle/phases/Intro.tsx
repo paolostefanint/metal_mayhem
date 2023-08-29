@@ -10,9 +10,9 @@ const Intro: Component<IntroProps> = (props) => {
 
     return (
         <div class={"text-white"}>
+<p class={"text-center text-2xl mb-3"}>Pronto ad uccidere?</p>
             <p>
-                Pronto ad uccidere? <br />
-                Seleziona il tuo personaggio ed entra nella stanza di attesa!
+                Seleziona il tuo personaggio per entrare nella stanza di attesa!
             </p>
 
             <div class={"grid grid-cols-3 gap-4 mt-10"} >
@@ -31,6 +31,17 @@ const Intro: Component<IntroProps> = (props) => {
             </div>
 
 
+            <div class={"mt-3"} classList={{hidden: selectedCharacter() === 0}}>
+                <div class={""} classList={{hidden: selectedCharacter() !== 1}}>
+                    Descrizione avatar 1
+                </div>
+                <div class={""} classList={{hidden: selectedCharacter() !== 2}}>
+                    Descrizione avatar 2
+                </div>
+                <div class={""} classList={{hidden: selectedCharacter() !== 3}}>
+                    Descrizione avatar 3
+                </div>   
+            </div>
 
             <button
                 disabled={selectedCharacter() === 0}

@@ -8,7 +8,7 @@ interface Props {
 const PlayerImageRounded = (props: Props) => {
   const { player } = props;
   const [ imgError, setImgError ] = createSignal(false);
-  const commonClasses = "w-[50px] h-[50px] mr-5 rounded-full border-2 border-black";
+  const commonClasses = "w-[50px] h-[50px] mr rounded-full border-2 border-black";
 
   const letters = () => {
     console.log("letters", props.player.name);

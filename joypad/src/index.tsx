@@ -5,7 +5,7 @@ import './index.css';
 import App from './App';
 import AuthProvider from "./shared/context/auth.context";
 import UiProvider from "./shared/context/ui.context";
-import bg from "./assets/bg_scritte.png";
+import bg from "./assets/bg.jpg";
 
 render(() =>
   <Router>
