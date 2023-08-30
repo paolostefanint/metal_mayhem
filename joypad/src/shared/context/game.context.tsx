@@ -21,15 +21,16 @@ import { GameInputs } from "../../models/game";
 
 interface GameDispatchContext {
     init: () => Promise<void>;
-    startGameLoop: (user: User, selectedCharacter:number) => Promise<void>;
-    joinRelayRoom: (user: User, selectedCharacter:number) => Promise<void>;
+    startGameLoop: (user: User, selectedCharacter: number) => Promise<void>;
+    joinRelayRoom: (user: User, selectedCharacter: number) => Promise<void>;
     waitForBattleReady: () => Promise<void>;
     waitForBattleStart: () => Promise<void>;
     clearBattleRoomOnStorage: () => void;
     werePlayingAGame: () => boolean;
     saveBattleSessionOnStorage: () => void;
-    joinBattleRoom: (user: User, selectedCharacter:number) => Promise<void>;
+    joinBattleRoom: (user: User, selectedCharacter: number) => Promise<void>;
     sendGameInputs: (inputs: GameInputs) => void;
+    goToIntro: () => void;
 }
 
 export interface GameStateContext {
@@ -94,7 +95,7 @@ const GameProvider = (props: GameProviderProps) => {
         setStore("bootstrapped", true);
     };
 
-    const startGameLoop = async (user: User, selectedCharacter:number) => {
+    const startGameLoop = async (user: User, selectedCharacter: number) => {
         try {
             setStore("ui", "queue");
 
@@ -143,7 +144,7 @@ const GameProvider = (props: GameProviderProps) => {
         });
     };
 
-    const joinRelayRoom = async (user: User, selectedCharacter:number) => {
+    const joinRelayRoom = async (user: User, selectedCharacter: number) => {
         console.log("Start joining relay room");
 
         const relayRoom = await gameClient()
@@ -235,13 +236,14 @@ const GameProvider = (props: GameProviderProps) => {
             );
     };
 
-    const joinBattleRoom = async (user: User, selectedCharacter:number) => {
+    const joinBattleRoom = async (user: User, selectedCharacter: number) => {
         if (werePlayingAGame()) {
             const sessionId =
                 localStorage.getItem(LOCALSTORAGE.BATTLE_SESSION_ID) || "";
 
             const reconnected = await gameClient()
-                ?.reconnect("battle", sessionId)
+                // ?.reconnect("battle", sessionId)
+                ?.reconnect("battle")
                 .catch((e) => {
                     setStore(
                         produce((state) => {
@@ -280,16 +282,27 @@ const GameProvider = (props: GameProviderProps) => {
 
         saveBattleSessionOnStorage();
 
-        store.battleRoom?.send(BATTLE_ROOM.IDENTITY, buildIdentityString(user, selectedCharacter));
+        store.battleRoom?.send(
+            BATTLE_ROOM.IDENTITY,
+            buildIdentityString(user, selectedCharacter),
+        );
     };
 
     const buildIdentityString = (user: User, selectedCharacter: number) => {
-        return `${user.sub}#${user.nickname}#${selectedCharacter}#${user.picture}`;
+        const nickname = user.nickname?.replace(/#/g, "");
+        const picture = user.picture?.replace(/#/g, "");
+        const sub = user.sub?.replace(/#/g, "");
+        
+        return `${sub}#${nickname}#${selectedCharacter}#${picture}`;
     };
 
     const sendGameInputs = ({ movement, attack }: GameInputs) => {
         const toSend = [movement[0], movement[1], attack ? 1 : 0];
         store.battleRoom?.send(BATTLE_ROOM.ACTION, toSend.join(","));
+    };
+
+    const goToIntro = () => {
+        setStore("ui", "intro");
     };
 
     return (
@@ -306,6 +319,7 @@ const GameProvider = (props: GameProviderProps) => {
                     saveBattleSessionOnStorage,
                     joinBattleRoom,
                     sendGameInputs,
+                    goToIntro,
                 }}
             >
                 <Show when={store.bootstrapped} fallback={GameLoader}>

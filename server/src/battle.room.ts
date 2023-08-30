@@ -5,12 +5,17 @@ import { ClientState, Player, PlayerPosition, PresenceMessages } from "./state";
 import { Globals } from "./global";
 import { coreListeningSocket, coreSendingSocket } from "./sockets";
 import { parseCoreMessage, CoreMessage, CorePlayer } from "./message-handling";
-import { GameStates, CoreStates } from "./state";
+import { CoreStates } from "./state";
+import { GameStates, FSM } from "./fsm";
 import { getRoomLogger, LogLevel } from "./logging";
+
+const SERVER_TO_CLIENT_SPEED = 1000 / 10;
 
 export class BattleRoom extends Room<ClientState> {
     autoDispose = false;
     static playerIndex = 1;
+
+    fsm = new FSM();
 
     logger = getRoomLogger("BATTLE", LogLevel.DEBUG);
 
@@ -57,9 +62,6 @@ export class BattleRoom extends Room<ClientState> {
             },
         );
 
-        this.presence.subscribe("round_countdown", (remainingTime: number) => {
-            this.state.game.remainingTime = remainingTime;
-        });
     }
 
     private handleUserIdentity(client: Client, data: string) {
@@ -75,7 +77,6 @@ export class BattleRoom extends Room<ClientState> {
         });
 
         if (existingPlayer) {
-
             // create a clone of the existing player
             const existingPlayerClone = existingPlayer.clone();
 
@@ -89,14 +90,13 @@ export class BattleRoom extends Room<ClientState> {
 
             client.send("battle_start");
         } else {
-
             // create new player
             const player = new Player();
             player.id = BattleRoom.playerIndex++;
             player.sessionId = client.sessionId;
             player.name = name;
-            player.avatar = avatar;
-            player.pic = pic;
+            player.avatar = avatar|| "1";
+            player.pic = pic || "";
             player.sub = sub;
             player.connected = true;
 
@@ -125,6 +125,12 @@ export class BattleRoom extends Room<ClientState> {
      * handleCoreConnectionClosed.
      */
     private handleCoreConnectionClosed() {
+        const stateChange = this.fsm.to(GameStates.GAME_ERROR);
+
+        if (!stateChange) {
+            console.error("OMG something very wrong happended");
+        }
+
         this.state.game.status = GameStates.GAME_ERROR;
         this.logger.log("GAME_ERROR");
         this.broadcast("battle_end");
@@ -153,8 +159,21 @@ export class BattleRoom extends Room<ClientState> {
                 if (!Globals.viewerSocket) {
                     return;
                 }
-                Globals.viewerSocket.send(JSON.stringify(this.state.toJSON()));
-            }, 500);
+                const state: any = this.state.toJSON();
+                const players = Object.values(state.players);
+                state.players = players.map((p: any) => {
+                    return {
+                        ...p,
+                        conn: p.connected,
+                        position: {
+                            // trim psition to 1 decimal
+                            x: Math.round(p.position.x * 10) / 10,
+                            y: Math.round(p.position.y * 10) / 10,
+                        },
+                    };
+                });
+                Globals.viewerSocket.send(JSON.stringify(state));
+            }, SERVER_TO_CLIENT_SPEED);
         }, 1000);
     }
 
@@ -171,85 +190,109 @@ export class BattleRoom extends Room<ClientState> {
 
         const coreGameState = message.current_state;
         const corePlayers = message.players;
+        const elapsedTime = message.elapsed_time;
+        const remainingTime = message.remaining_time;
+
+        this.state.game.remainingTime = remainingTime;
 
         switch (coreGameState) {
             case CoreStates.WaitingForPlayers:
-                // this.logger.log("BATTLE_WAITING_FOR_PLAYERS");
-                // do nothing
-                this.state.game.status = GameStates.WAITING_FOR_PLAYERS;
-
+                this.changeStateToWaitingForPlayers();
                 break;
 
             case CoreStates.Running:
-                this.state.game.time = +new Date();
-                this.state.game.remainingTime = 0;
-
-                if (this.state.game.status !== GameStates.RUNNING) {
-                    // ensure relay in on the same state
-                    this.presence.publish("battle_state", GameStates.RUNNING);
-                }
-
-                this.state.game.status = GameStates.RUNNING;
-
-                this.state.players.forEach((p) => {
-                    const corePlayer = corePlayers.find(
-                        (corePlayer) => corePlayer.id === p.id,
-                    ) as CorePlayer;
-
-                    if (!corePlayer) {
-                        this.logger.log(
-                            "WTF server players != core players?",
-                            p,
-                        );
-                        return;
-                    }
-
-                    p.life = corePlayer.health;
-                    p.direction = corePlayer.dir;
-                    p.position = new PlayerPosition();
-                    p.position.x = corePlayer.p[0];
-                    p.position.y = corePlayer.p[1];
-                    p.spriteState = corePlayer.sprite_state;
-                });
-
+                this.changeStateToRunning(corePlayers, remainingTime);
                 break;
 
             case CoreStates.RoundEnd:
-                if (!this.shouldHandleRoundEnd()) {
-                    return;
-                }
-
-                this.state.game.status = GameStates.GAME_OVER;
-                this.logger.log("BATTLE_END");
-                this.broadcast("battle_end");
-
-                // tell relay that the game is over
-                this.presence.publish(
-                    PresenceMessages.BATTLE_STATE,
-                    GameStates.GAME_OVER,
-                );
-
-                setTimeout(() => {
-                    this.logger.log("Back to waiting for players");
-                    this.state.game.status = GameStates.WAITING_FOR_PLAYERS;
-
-                    // tell relay that the game is over
-                    this.presence.publish(
-                        PresenceMessages.BATTLE_STATE,
-                        GameStates.WAITING_FOR_PLAYERS,
-                    );
-                    // detstroy players here so client can see results
-                    this.state.players = new MapSchema<Player>();
-
-                    this.broadcast("endgame");
-                }, Globals.GAME_EXIT_TIME);
-
+                this.changeStateToRoundEnd(corePlayers, remainingTime);
                 break;
 
             default:
                 this.logger.log("UNKNOWN_GAME_STATE");
                 break;
         }
+    }
+
+    private changeStateToWaitingForPlayers() {
+        // this.logger.log("BATTLE_WAITING_FOR_PLAYERS");
+        // do nothing
+        const stateChange = this.fsm.to(GameStates.WAITING_FOR_PLAYERS);
+        if (!stateChange) {
+            console.error("OMG something very wrong happended");
+        }
+        this.state.game.status = GameStates.WAITING_FOR_PLAYERS;
+    }
+
+    private changeStateToRunning(corePlayers: any[], remainingTime: number) {
+        this.state.game.time = +new Date();
+        this.state.game.remainingTime = remainingTime;
+
+        const stateChange = this.fsm.to(GameStates.RUNNING);
+        if (!stateChange) {
+            console.error("OMG something very wrong happended");
+        }
+
+        if (this.state.game.status !== GameStates.RUNNING) {
+            // ensure relay in on the same state
+            this.presence.publish("battle_state", GameStates.RUNNING);
+        }
+
+        this.state.game.status = GameStates.RUNNING;
+
+        this.state.players.forEach((p) => {
+            const corePlayer = corePlayers.find(
+                (corePlayer) => corePlayer.id === p.id,
+            ) as CorePlayer;
+
+            if (!corePlayer) {
+                this.logger.log("WTF server players != core players?", p);
+                return;
+            }
+
+            p.life = corePlayer.health;
+            p.direction = corePlayer.dir;
+            p.position = new PlayerPosition();
+            p.position.x = corePlayer.p[0];
+            p.position.y = corePlayer.p[1];
+            p.spriteState = corePlayer.sprite_state;
+        });
+    }
+
+    private changeStateToRoundEnd(corePlayers: any[], remainingTime: number) {
+        if (!this.shouldHandleRoundEnd()) {
+            return;
+        }
+
+        const stateChange = this.fsm.to(GameStates.GAME_OVER);
+        if (!stateChange) {
+            console.error("OMG something very wrong happended");
+        }
+
+        this.state.game.status = GameStates.GAME_OVER;
+        this.logger.log("BATTLE_END");
+        this.broadcast("battle_end");
+
+        // tell relay that the game is over
+        this.presence.publish(
+            PresenceMessages.BATTLE_STATE,
+            GameStates.GAME_OVER,
+        );
+
+        setTimeout(() => {
+            this.logger.log("Back to waiting for players");
+            this.state.game.status = GameStates.WAITING_FOR_PLAYERS;
+
+            // tell relay that the game is over
+            this.presence.publish(
+                PresenceMessages.BATTLE_STATE,
+                GameStates.WAITING_FOR_PLAYERS,
+            );
+            // detstroy players here so client can see results
+            this.state.players = new MapSchema<Player>();
+
+            this.broadcast("endgame");
+        }, Globals.GAME_EXIT_TIME);
     }
 
     private shouldHandleRoundEnd() {
@@ -293,10 +336,13 @@ export class BattleRoom extends Room<ClientState> {
             let startGameMessage = `start|||`;
             let playersToSend = [];
             this.state.players.forEach((player) => {
+
+                const avatar = parseInt(player.avatar) || 1; 
+
                 const startingPlayer = {
                     player_id: player.id,
                     name: player.name,
-                    avatar: parseInt(player.avatar),
+                    avatar,
                     pic: player.pic,
                     color: player.color,
                     sub: player.sub,

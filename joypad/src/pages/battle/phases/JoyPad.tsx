@@ -35,7 +35,8 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
         let joystickCenter: [number, number] = [150, 150];
         let joystickRadius = 100;
 
-        let buttonCenter = [150, 400];
+        let buttonCenter = [150, 400]; 
+        const JOYPAD_SPLIT = 1.5;
 
         let canvasWidth = 300;
         let canvasHeight = 500;
@@ -94,6 +95,12 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
         };
 
         const handleButtonTouch = (touch: any) => {
+
+            // draw button pressed
+            p.fill(255, 0, 0);
+            p.ellipse(buttonCenter[0], buttonCenter[1], 50, 50);
+
+
             inputs.attack = true;
         };
 
@@ -136,7 +143,11 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
         p.windowResized = () => {
             console.log("resized");
             canvasWidth = field.offsetWidth;
-            canvasHeight = field.offsetHeight;
+            if (isLandscape()) {
+            canvasHeight = Math.min(field.offsetHeight, 300);
+} else {
+            canvasHeight = Math.min(field.offsetHeight, 500);
+}
             p.resizeCanvas(canvasWidth, canvasHeight);
             drawJoypadBase();
         };
@@ -155,26 +166,26 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
                 const touch = p.touches[i] as any;
 
                 if (isPortrait()) {
-                    if (touch.y < canvasHeight / 2) {
+                    if (touch.y < canvasHeight / JOYPAD_SPLIT) {
                         // joystick area
                         console.log("joystick area");
                         handleJoystickTouch(touch);
                     }
 
-                    if (touch.y > canvasHeight / 2) {
+                    if (touch.y > canvasHeight / JOYPAD_SPLIT) {
                         // button area
                         console.log("button area");
                         handleButtonTouch(touch);
                     }
                 }
                 if (isLandscape()) {
-                    if (touch.x < canvasWidth / 2) {
+                    if (touch.x < canvasWidth / JOYPAD_SPLIT) {
                         // joystick area
                         console.log("joystick area");
                         handleJoystickTouch(touch);
                     }
 
-                    if (touch.x > canvasWidth / 2) {
+                    if (touch.x > canvasWidth / JOYPAD_SPLIT) {
                         // button area
                         console.log("button area");
                         handleButtonTouch(touch);

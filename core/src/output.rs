@@ -1,5 +1,6 @@
 use super::game::Game;
 use super::world::GameState;
+use crate::ROUND_DURATION;
 use futures_util::SinkExt;
 use serde_json;
 use std::sync::{Arc, Mutex};
@@ -56,6 +57,14 @@ fn get_game_state(game: Arc<Mutex<Game>>) -> String {
 
         let game_state = GameState {
             current_state: game.phase,
+            elapsed_time: match game.started_at {
+                Some(started_at) => started_at.elapsed().as_secs_f32(),
+                None => 0.0,
+            },
+            remaining_time: match game.started_at {
+                Some(started_at) => (ROUND_DURATION as f32) - started_at.elapsed().as_secs_f32(),
+                None => 0.0,
+            },
             players: world.get_players_state(),
         };
         let game_state_json = serde_json::to_string(&game_state).unwrap();

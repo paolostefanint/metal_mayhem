@@ -1,4 +1,5 @@
 import {Schema, ArraySchema, type, MapSchema} from "@colyseus/schema";
+import {GameStates} from "./fsm";
 
 export enum PresenceMessages {
     BATTLE_PLAYERS = "battle_players",
@@ -12,12 +13,6 @@ export enum CoreStates {
     RoundEnd = "RoundEnd",
 }
 
-export enum GameStates {
-    WAITING_FOR_PLAYERS = "WAITING_FOR_PLAYERS",
-    GAME_OVER = "GAME_OVER", 
-    RUNNING = "RUNNING",
-    GAME_ERROR = "GAME_ERROR",
-}
 
 export class PlayerPosition extends Schema {    
     @type("number") x: number;

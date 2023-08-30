@@ -4,7 +4,7 @@ import http from "http";
 import { Player, PresenceMessages, RelayState } from "./state";
 import { Globals } from "./global";
 import { createPacketSizeTicker } from "./packet-size-ticker";
-import { GameStates } from "./state";
+import { GameStates, FSM } from "./fsm";
 import { getRoomLogger, LogLevel } from "./logging";
 
 export interface PlayerInitData {
@@ -17,6 +17,8 @@ export interface PlayerInitData {
 
 export class DropRelayRoom extends Room<RelayState> {
     // tslint:disable-line
+
+    fsm = new FSM();
 
     public allowReconnectionTime: number = 0;
     autoDispose = false;
@@ -86,7 +88,7 @@ export class DropRelayRoom extends Room<RelayState> {
 
         if (this.playerAlreadyExists(sub)) {
             this.logger.log("Player already exists, reconnecting...");
-            player = this.handlePlayerReconnection(player, client);
+            this.handlePlayerReconnection(player, client);
 
             if (this.playerShouldEnterBattleOnConnect(player)) {
                 this.logger.log("Player should enter battle on connect");
@@ -190,12 +192,11 @@ export class DropRelayRoom extends Room<RelayState> {
     }
 
     private broadcatsQueue() {
-        this.broadcast(
-            "queue",
-            this.waitingPlayers
-                .toArray()
-                .map((p) => `${p.name}|${p.connected}|${p.avatar}|${p.pic}`),
-        );
+        const toBroadcast = this.waitingPlayers
+            .toArray()
+            .map((p) => `${p.name}|${p.connected}|${p.avatar}|${p.pic}`);
+        console.log("toBroadcast", toBroadcast);
+        this.broadcast("queue", toBroadcast);
     }
 
     private startNewGame() {
@@ -236,7 +237,10 @@ export class DropRelayRoom extends Room<RelayState> {
             }
         }
 
-        this.logger.log("this.playingPlayers", Array.from(this.playingPlayers).map((p) => p.name));
+        this.logger.log(
+            "this.playingPlayers",
+            Array.from(this.playingPlayers).map((p) => p.name),
+        );
 
         this.presence.publish(
             PresenceMessages.BATTLE_PLAYERS,
@@ -289,11 +293,11 @@ export class DropRelayRoom extends Room<RelayState> {
     }
 
     private handlePlayerReconnection(player: Player, client: Client) {
-        player = this.state.players.get(player.sub);
-        player.sessionId = client.sessionId;
-        player.connected = true;
-        this.logger.log(`${player.name} reconnected`);
-        return player;
+        const existingPlayer = this.state.players.get(player.sub);
+        existingPlayer.sessionId = client.sessionId;
+        existingPlayer.connected = true;
+        existingPlayer.avatar = player.avatar;
+        this.logger.log(`${existingPlayer.name} reconnected`);
     }
 
     private static createPlayerOnJoin(playerInitData: PlayerInitData) {

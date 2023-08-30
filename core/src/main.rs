@@ -14,7 +14,9 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
+pub const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
+// diration in seconds
+pub const ROUND_DURATION: u64 = 30;
 
 #[derive(Debug)]
 pub enum ServerCommand {
@@ -75,7 +77,7 @@ fn handle_input(game: Arc<Mutex<Game>>, data: &String) {
 
     let mut game_ref = game.lock().unwrap();
     if game_ref.is_running() {
-        println!("PlayerId: {:?}, input: {:?}", player_id, input);
+        // println!("PlayerId: {:?}, input: {:?}", player_id, input);
         game_ref.handle_input(player_id, movement, attack);
     }
 

@@ -105,6 +105,8 @@ impl GameWorld {
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub current_state: GamePhase,
+    pub elapsed_time: f32,
+    pub remaining_time: f32,
     pub players: Vec<PlayerState>,
 }
 
@@ -135,6 +137,8 @@ impl GameWorld {
 
         let mut hitboxes: Vec<PlayerHitBox> = vec![];
 
+        let world_size = self.size.clone();
+
         for player in self.get_players_mut() {
             if player.input.attack {
                 let hitbox_position = match player.direction {
@@ -146,6 +150,26 @@ impl GameWorld {
                 hitboxes.push(hitbox);
                 player.sprite_state = SpriteState::Attack;
             }
+            // check if player is out of bounds
+
+            // check left
+            if player.position.0 < 0.0 {
+                player.position.0 = 0.0;
+            }
+            // check right
+            if player.position.0 > world_size.0 {
+                player.position.0 = world_size.0;
+            }
+            // check top
+            if player.position.1 < 0.0 {
+                player.position.1 = 0.0;
+            }
+            // check bottom
+            if player.position.1 > world_size.1 {
+                player.position.1 = world_size.1;
+            }
+
+            // if so, move them back in bounds
         }
 
         for hitbox in hitboxes {

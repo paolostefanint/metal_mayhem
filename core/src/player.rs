@@ -69,19 +69,19 @@ impl Player {
             Avatar::Tizia => PlayerStats {
                 attack: 10.0,
                 defense: 10.0,
-                max_speed: 10.0,
+                max_speed: 5.0,
                 health: 100.0,
             },
             Avatar::Gundam => PlayerStats {
-                attack: 20.0,
-                defense: 20.0,
-                max_speed: 10.0,
+                attack: 10.0,
+                defense: 10.0,
+                max_speed: 5.0,
                 health: 100.0,
             },
             Avatar::Coso => PlayerStats {
-                attack: 30.0,
-                defense: 30.0,
-                max_speed: 10.0,
+                attack: 10.0,
+                defense: 10.0,
+                max_speed: 5.0,
                 health: 100.0,
             },
         };

@@ -11,6 +11,8 @@ export type CorePlayer = {
 
 export type CoreMessage = {
     current_state: CoreStates;
+    elapsed_time: number;
+    remaining_time: number;
     players: any[];
 };
 

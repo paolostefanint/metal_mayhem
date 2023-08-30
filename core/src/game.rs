@@ -1,5 +1,6 @@
 use crate::player::{Player, PlayerInputs};
 use crate::world::GameWorld;
+use crate::ROUND_DURATION;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -16,8 +17,6 @@ pub struct Game {
     pub started_at: Option<Instant>,
     world: GameWorld,
 }
-
-const ROUND_DURATION: u64 = 10000;
 
 impl Game {
     pub fn new(world_size: (f32, f32)) -> Game {
@@ -36,6 +35,7 @@ impl Game {
     pub fn end(&mut self) {
         self.phase = GamePhase::RoundEnd;
         self.get_world_mut().reset();
+        self.started_at = None;
     }
 
     pub fn is_running(&self) -> bool {

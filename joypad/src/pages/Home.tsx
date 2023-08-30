@@ -26,7 +26,7 @@ const Home = () => {
 
       <div class={"text-white overflow-y-auto"}>
         <p>
-            Na robba grossa
+           Un testo
         </p>
       </div>
     </div>
