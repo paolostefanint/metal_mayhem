@@ -1,100 +1,3 @@
-/*package main
-
-import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"time"
-
-	"github.com/gorilla/websocket"
-)
-
-type Player struct {
-	ID          int       `json:"id"`
-	P           []float32 `json:"p"`
-	Dir         string    `json:"dir"`
-	Attack      bool      `json:"attack"`
-	Health      float64   `json:"health"`
-	SpriteState string    `json:"sprite_state"`
-}
-
-type GameState struct {
-	CurrentTime  float64  `json:"current_time"`
-	CurrentState string   `json:"current_state"`
-	Players      []Player `json:"players"`
-}
-
-var connections = make(map[*websocket.Conn]bool)
-var broadcast = make(chan string)
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-func main() {
-	http.HandleFunc("/", handleWebSocket)
-	sendDataToClients()
-	log.Fatal(http.ListenAndServe(":42000", nil))
-}
-
-func handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer conn.Close()
-
-	connections[conn] = true
-
-	for {
-		// Keep the connection alive
-	}
-}
-
-func sendDataToClients() {
-	dataFile, err := ioutil.ReadFile("data.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var dataArray []GameState
-	err = json.Unmarshal(dataFile, &dataArray)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for {
-		for _, gameState := range dataArray {
-			out, err := json.Marshal(gameState)
-			if err != nil {
-				log.Fatal(err)
-			}
-			sendToAllClients(string(out))
-			log.Println("Sent data to clients", string(out))
-			time.Sleep(time.Second)
-		}
-		time.Sleep(time.Second)
-	}
-}
-
-func sendToAllClients(message string) {
-	for conn := range connections {
-		conn.WriteMessage(websocket.TextMessage, []byte(message))
-		time.Sleep(time.Second)
-	}
-}
-
-func init() {
-	go sendDataToClients()
-}
-
-
-
---*/
 package main
 
 import (
@@ -111,19 +14,30 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Player struct {
-	ID          int       `json:"id"`
-	P           []float32 `json:"p"`
-	Dir         string    `json:"dir"`
-	Attack      bool      `json:"attack"`
-	Health      float64   `json:"health"`
-	SpriteState string    `json:"sprite_state"`
-}
-
 type GameState struct {
-	CurrentTime  float64  `json:"current_time"`
-	CurrentState string   `json:"current_state"`
-	Players      []Player `json:"players"`
+	Game struct {
+		Status         string `json:"status"`
+		Time           int64  `json:"time"`
+		RemainingTime  int    `json:"remainingTime"`
+		RoundCountdown int    `json:"roundCountdown"`
+	} `json:"game"`
+	Players []struct {
+		ID        int    `json:"id"`
+		Connected bool   `json:"connected"`
+		Name      string `json:"name"`
+		SessionID string `json:"sessionId"`
+		Sub       string `json:"sub"`
+		Color     string `json:"color"`
+		Pic       string `json:"pic"`
+		Avatar    string `json:"avatar"`
+		Life      int    `json:"life"`
+		Position  struct {
+			X float64 `json:"x"`
+			Y float64 `json:"y"`
+		} `json:"position"`
+		Direction   string `json:"direction"`
+		SpriteState string `json:"spriteState"`
+	} `json:"players"`
 }
 
 type CustomConn struct {
@@ -216,24 +130,25 @@ func Execute(enablelog bool) {
 		}
 		for _, gameState := range dataArray {
 			for _, c := range connections {
-
 				msg, err := json.Marshal(gameState)
 				if err != nil {
 					fmt.Println(err.Error())
 				}
 
-				//msg := "send message to conn " + u.String()
 				err = c.Conn.WriteMessage(websocket.TextMessage, []byte(msg))
 				if err != nil {
 					fmt.Println(err.Error())
+					connections[c.ID].Conn.Close()
+					delete(connections, c.ID)
+					break
 				}
 				if enablelog {
 					fmt.Printf("%v\n", string(msg))
 				}
 			}
 
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
-		time.Sleep(10 * time.Millisecond)
+		//time.Sleep(10 * time.Millisecond)
 	}
 }
