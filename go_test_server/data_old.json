@@ -1,0 +1,158 @@
+[
+    {
+        "current_time": 0.0,
+        "current_state": "WaitingForPlayers",
+        "players": [
+            {
+                "id": 1,
+                "p": [
+                    5.0,
+                    10.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 2,
+                "p": [
+                    10.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 3,
+                "p": [
+                    20.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            }
+        ]
+    },
+    {
+        "current_time": 0.0,
+        "current_state": "RoundCountdown",
+        "players": [
+            {
+                "id": 1,
+                "p": [
+                    5.0,
+                    10.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 2,
+                "p": [
+                    10.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 3,
+                "p": [
+                    20.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            }
+        ]
+    },
+    {
+        "current_time": 0.0,
+        "current_state": "Running",
+        "players": [
+            {
+                "id": 1,
+                "p": [
+                    5.0,
+                    10.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 2,
+                "p": [
+                    10.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 3,
+                "p": [
+                    20.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            }
+        ]
+    },
+    {
+        "current_time": 0.0,
+        "current_state": "RoundEnd",
+        "players": [
+            {
+                "id": 1,
+                "p": [
+                    5.0,
+                    10.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 2,
+                "p": [
+                    10.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            },
+            {
+                "id": 3,
+                "p": [
+                    20.0,
+                    5.0
+                ],
+                "dir": "R",
+                "attack": false,
+                "health": 100.0,
+                "sprite_state": "Idle"
+            }
+        ]
+    }
+    ]
