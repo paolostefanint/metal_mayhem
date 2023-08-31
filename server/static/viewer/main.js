@@ -1,22 +1,12 @@
-const url = new URL(window.location.href);
-const HOSTNAME = `${url.protocol}//${url.hostname}${
-    url.port ? `:${url.port}` : ""
-}`;
-const HOSTNAME_NO_PROTOCOL = `${url.hostname}${url.port ? `:${url.port}` : ""}`;
+// const url = new URL(window.location.href);
+// const HOSTNAME = `${url.protocol}//${url.hostname}${
+//     url.port ? `:${url.port}` : ""
+// }`;
+// const HOSTNAME_NO_PROTOCOL = `${url.hostname}${url.port ? `:${url.port}` : ""}`;
 
-//
-// DEV INIT
-//
-const MULTIPLAYER_HOST = `ws://localhost:7001`;
-const socket = io(`${MULTIPLAYER_HOST}`);
+const HOSTNAME_NO_PROTOCOL = "0.0.0.0:7001";
 
-//
-// PRODUCTION INIT
-//
-// const MULTIPLAYER_HOST = `${HOSTNAME}`;
-// const socket = io(`${MULTIPLAYER_HOST}`, {
-//     path: "/viewersocket/socket.io",
-// });
+const socket = new WebSocket(`ws://${HOSTNAME_NO_PROTOCOL}`);
 
 let gameState = {
     game: {},
@@ -24,13 +14,13 @@ let gameState = {
 };
 let RENDERING_SCALE = 5;
 
-socket.on("connect", () => {
+socket.addEventListener("open", () => {
     console.log("connected");
 });
 
-socket.on("message", (data) => {
-    gameState = JSON.parse(data);
-    console.log(data);
+socket.addEventListener("message", (message) => {
+    gameState = JSON.parse(message.data);
+    console.log(message.data);
 });
 
 function setup() {
@@ -40,19 +30,16 @@ function setup() {
 }
 
 function draw() {
-
     background(81);
     noStroke();
 
-    scale()
+    scale();
     drawTimer();
-
 
     scale(RENDERING_SCALE);
     gameState.players.forEach((player) => {
         drawPlayer(player);
     });
-
 }
 
 function drawTimer() {

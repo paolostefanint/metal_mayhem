@@ -1,6 +1,15 @@
+version: "3.8"
+name: mm_engine
 services:
-  name: mm_engine
-  server:
+  web-server:
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+      - "433:433"
+
+  multiplayer-server:
     build: ./server
     ports:
       - "7000:7000"
@@ -24,4 +33,3 @@ services:
     build: ./server/static/viewer
     ports:
       - "8000:8000"
-
