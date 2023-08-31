@@ -4,9 +4,9 @@
 // }`;
 // const HOSTNAME_NO_PROTOCOL = `${url.hostname}${url.port ? `:${url.port}` : ""}`;
 
-const HOSTNAME_NO_PROTOCOL = "0.0.0.0:7001";
+const HOSTNAME_NO_PROTOCOL = "mm.codeinthedark.dev/client/";
 
-const socket = new WebSocket(`ws://${HOSTNAME_NO_PROTOCOL}`);
+const socket = new WebSocket(`wss://${HOSTNAME_NO_PROTOCOL}`);
 
 let gameState = {
     game: {},
