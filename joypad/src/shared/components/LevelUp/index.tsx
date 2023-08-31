@@ -32,7 +32,7 @@ const Boom1 = () => (
 
 const LevelUp: Component<Props> = (props) => {
   return (
-    <div class={`levelUp flex justify-center items-center fixed inset-0 z-40 transition-all ${props.show ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-75'} bg-[url('/src/assets/bg_scritte.png')] bg-no-repeat bg-cover text-white`}>
+    <div class={`levelUp flex justify-center items-center fixed inset-0 z-40 transition-all ${props.show ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-75'} bg-[url('/src/assets/bg.jpg')] bg-no-repeat bg-cover text-white`}>
 
       <Boom1/>
 

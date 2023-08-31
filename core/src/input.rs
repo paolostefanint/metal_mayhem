@@ -1,14 +1,14 @@
 use super::game::Game;
 use super::player::Player;
-use super::world::GameWorld;
 use super::ServerCommand;
 use super::ServerCommandMessage;
 use futures_util::SinkExt;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio_websockets::{Error, Message, ServerBuilder};
 
+const COMMAND_SPLIT_TOKEN: &str = "|||";
 pub async fn start_server_listening_websocket(
     tx: Sender<ServerCommandMessage>,
 ) -> Result<(), Error> {
@@ -25,7 +25,7 @@ pub async fn start_server_listening_websocket(
             while let Some(msg) = ws_stream.next().await {
                 match msg {
                     Ok(msg) => {
-                        println!("Received a message from the server: {:?}", msg);
+                        // println!("Received a message from the server: {:?}", msg);
 
                         let text_message = match msg.as_text() {
                             Ok(text) => text,
@@ -35,7 +35,9 @@ pub async fn start_server_listening_websocket(
                             }
                         };
 
-                        let text_tokens = text_message.split("|").collect::<Vec<&str>>();
+                        let text_tokens = text_message
+                            .split(COMMAND_SPLIT_TOKEN)
+                            .collect::<Vec<&str>>();
 
                         match text_tokens.get(0) {
                             Some(&"start") => {
@@ -63,7 +65,6 @@ pub async fn start_server_listening_websocket(
                                 .unwrap();
                             }
                             Some(&"input") => {
-                                println!("Input");
                                 let data = match text_tokens.get(1) {
                                     Some(&data) => data,
                                     None => "",

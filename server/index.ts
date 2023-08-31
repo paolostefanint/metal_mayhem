@@ -1,68 +1,55 @@
-import {matchMaker, Server} from "colyseus";
-import {BattleRoom} from "./src/battle.room";
+import { matchMaker, Server } from "colyseus";
+import { BattleRoom } from "./src/battle.room";
 import http from "http";
-import {WebSocketTransport} from "@colyseus/ws-transport";
-import {DropRelayRoom} from "./src/relay.room";
-import {enhanced_logging} from "./src/logging";
+import { WebSocketTransport } from "@colyseus/ws-transport";
+import { DropRelayRoom } from "./src/relay.room";
+import { enhanced_logging } from "./src/logging";
 import express from "express";
-import {Server as SocketIoServer} from "socket.io"
-import {Globals} from "./src/global";
+import { Globals } from "./src/global";
+import { getRoomLogger, LogLevel } from "./src/logging";
+import { Server as WebSocketServer } from "ws"
+const multiplayerServerPort = Number(process.env.SERVER_PORT) || 7000;
+const viewerServerPort = Number(process.env.VIEWER_PORT) || 7001;
 
-const multiplayerServerPort = Number(process.env.port) || 7000;
-const viewerServerPort = Number(process.env.port) || 7001;
+
 
 
 async function startGameServer() {
+    const gameServer = new Server({
+        // server: createServer(app),
+        transport: new WebSocketTransport({}),
+    });
 
-  const gameServer = new Server({
-    // server: createServer(app),
-    transport: new WebSocketTransport({})
-  });
+    gameServer.define("battle", BattleRoom);
+    gameServer.define("relay", DropRelayRoom);
 
-  gameServer.define('battle', BattleRoom);
-  gameServer.define('relay', DropRelayRoom);
+    const relay = await matchMaker.createRoom("relay", {});
+    const battle = await matchMaker.createRoom("battle", {
+        /* options */
+    });
 
-  const relay = await matchMaker.createRoom('relay', {});
-  const battle = await matchMaker.createRoom("battle", { /* options */});
+    enhanced_logging(relay, battle);
 
-  enhanced_logging(relay, battle);
-
-  return gameServer.listen(multiplayerServerPort)
+    return gameServer.listen(multiplayerServerPort);
 }
 
 async function startViewerServer() {
+    const logger = getRoomLogger("VIEWER_SOCKET", LogLevel.DEBUG);
 
-  const app = express();
-  app.use(express.json());
+    const wsServer = new WebSocketServer({
+        port: viewerServerPort,
+    });
 
-  const server = http.createServer(app);
+    wsServer.on("connection", (socket) => {
+        Globals.viewerSocket.add(socket);
+        logger.log("Viewer connected");
+    });
 
-  const socketPath = process.env.NODE_ENV === 'production' 
-                ? "/viewersocket/socket.io" : "";
-
-  const io = new SocketIoServer(server, {
-    path: socketPath,
-    cors: {
-        origin: "*",
-      methods: ["GET", "POST"]
-    }
-  });
-
-  io.on('connection', socket => {
-    console.log('viewer connected');
-    Globals.viewerSocket = socket;
-  })
-
-  return server.listen(viewerServerPort);
+    console.log(`Viewer started on port ${viewerServerPort}`);
 }
 
-startViewerServer()
-  .then(() => {
-    console.log(`Viewer on ws://localhost:${viewerServerPort}`);
-  })
+startViewerServer();
 
-startGameServer()
-  .then(() => {
+startGameServer().then(() => {
     console.log(`Server started on port ${multiplayerServerPort}`);
-  })
-
+});

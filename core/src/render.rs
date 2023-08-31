@@ -1,6 +1,6 @@
 use super::world::GameWorld;
 
-pub fn render(world: &GameWorld) {
+pub fn _render(world: &GameWorld) {
     // clear screen
     print!("{}[2J", 27 as char);
 

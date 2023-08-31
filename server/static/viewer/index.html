@@ -1,12 +1,12 @@
 <html>
 <head>
-    <title>Drops field</title>
-    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <title>Metal Mayhem Debug Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.min.js"></script>
     <script src="qrcode.min.js"></script>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
           integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
-    <link rel="stylesheet" href="../css/bootstrap4-neon-glow.min.css">
+
+    <script defer src="./main.js"></script>
 
     <style>
         * {
@@ -14,197 +14,13 @@
             padding: 0;
         }
 
-        #qrcode-right {
-            display: block;
-            position: absolute;
-            right: 0;
-            bottom: 0;
-        }
-
-        #qrcode-left {
-            display: block;
-            position: absolute;
-            left: 0;
-            bottom: 0;
-        }
-
-        body {
-            background: #161616;
-            display: flex;
-            justify-content: center;
-        }
-
-        #players {
-            margin-left: 40px;
-        }
-
-        #ranking span.color {
-            display: inline-block;
-            height: 20px;
-            width: 20px;
-        }
-
-        #time-container {
-            font-size: 100px
-        }
-        #time-container small {
-            font-size: 50px
-        }
     </style>
 
 </head>
 
 
 <body>
-<div id="field"></div>
-<div id="players">
-    <h2>Ranking</h2>
-    <ol id="ranking"></ol>
-    <div id="time-container">
-        <h3>Time left</h3>
-        <span id="time-missing"></span>
-        <small>/600</small>
-    </div>
-
-</div>
-
-<div id="qrcode-right"></div>
-<div id="qrcode-left"></div>
-
-<script>
-    const url = new URL(window.location.href);
-    const HOSTNAME = `${url.protocol}//${url.hostname}${url.port ? `:${url.port}` : ''}`;
-    const HOSTNAME_NO_PROTOCOL = `${url.hostname}${url.port ? `:${url.port}` : ''}`;
-
-
-    //
-    // DEV INIT
-    //
-    // const MULTIPLAYER_HOST = `ws://localhost:7001`;
-    // const socket = io(`${MULTIPLAYER_HOST}`);
-
-    //
-    // PRODUCTION INIT
-    //
-    const MULTIPLAYER_HOST = `${HOSTNAME}`;
-    const socket = io(`${MULTIPLAYER_HOST}`, {
-        path: "/viewersocket/socket.io",
-    });
-
-
-    let prev_field = [];
-    let field = [];
-    let playersMap = {};
-    let round = 0;
-
-
-    const UI = {
-        ranking: document.getElementById('ranking'),
-        timeMissing: document.getElementById('time-missing'),
-    };
-
-
-    socket.on('field', (data) => {
-        try {
-
-            prev_field = JSON.parse(JSON.stringify(field));
-
-            field = JSON.parse(data);
-        } catch (err) {
-            console.log('failed parsing data')
-        }
-    });
-
-    socket.on('time', (time) => {
-        UI.timeMissing.innerText = `${time}`;
-    });
-
-    socket.on('players', (players) => {
-        playersMap = {};
-
-
-        players.forEach(player => {
-            playersMap[parseInt(player.id)] = player;
-        })
-
-        const ranking = document.getElementById('ranking')
-        ranking.innerHTML = '';
-
-        players
-            .sort((a, b) => {
-                return b.score - a.score;
-            })
-            .forEach(player => {
-                const li = document.createElement('li');
-                const colorSpan = document.createElement('span');
-                colorSpan.classList.add('color');
-                colorSpan.style.backgroundColor = player.color;
-                li.appendChild(colorSpan);
-                const textSpan = document.createElement('span');
-                li.appendChild(textSpan);
-                textSpan.innerText = `${player.name} - ${player.score}`;
-                ranking.appendChild(li);
-            });
-
-    });
-
-
-    const CELL_SIZE = 9;
-    const BOARD_SIZE = 100;
-
-    function setup() {
-        background(81)
-        const canvas = createCanvas(BOARD_SIZE * (CELL_SIZE), BOARD_SIZE * (CELL_SIZE));
-        canvas.parent('field');
-        frameRate(10);
-    }
-
-    function draw() {
-        background(81);
-
-
-
-
-        try {
-
-            // noStroke()
-
-            if (Object.entries(playersMap).length > 0) {
-                for (let i = 0; i < field.length; i++) {
-                    for (let j = 0; j < field[i].length; j++) {
-
-                        // if (prev_field[i][j] !== field[i][j]) {
-                        //
-                        //     stroke('white');
-                        //
-                        // } else {
-                        //     stroke(81)
-                        // }
-
-
-                        if (field[i][j] > 0) {
-                            fill(playersMap[field[i][j]].color);
-                        } else {
-                            fill(0);
-                        }
-
-                        rect(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                    }
-                }
-            }
-        } catch (err) {
-            console.log('failed drawing field')
-        }
-
-
-
-    }
-
-
-    new QRCode(document.getElementById("qrcode-right"), `${HOSTNAME}/joypad/`);
-    new QRCode(document.getElementById("qrcode-left"), `${HOSTNAME}/joypad/`);
-
-</script>
+    <div id="field"></div>
 
 </body>
 

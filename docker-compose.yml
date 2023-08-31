@@ -1,0 +1,35 @@
+version: "3.8"
+name: mm_engine
+services:
+  web-server:
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+      - "433:433"
+
+  multiplayer-server:
+    build: ./server
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+    environment:
+      - CORE_SENDING_ADDRESS=ws://mm_engine-core-1:40010
+      - CORE_RECEIVING_ADDRESS=ws://mm_engine-core-1:42000
+
+  core:
+    build: ./core
+    # ports:
+    #   - "40010:40010"
+    #   - "42000:42000"
+
+  joypad:
+    build: ./joypad
+    ports:
+      - "3000:3000"
+
+  viewer:
+    build: ./server/static/viewer
+    ports:
+      - "8000:8000"

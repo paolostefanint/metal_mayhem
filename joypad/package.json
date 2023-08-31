@@ -2,6 +2,9 @@
   "name": "vite-template-solid",
   "version": "0.0.0",
   "description": "",
+  "prettier": {
+      "tabWidth": 4
+  },
   "scripts": {
     "start": "vite",
     "dev": "vite --port 8001",

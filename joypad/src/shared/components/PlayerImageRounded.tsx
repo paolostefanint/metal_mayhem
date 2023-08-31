@@ -8,10 +8,17 @@ interface Props {
 const PlayerImageRounded = (props: Props) => {
   const { player } = props;
   const [ imgError, setImgError ] = createSignal(false);
-  const commonClasses = "w-[50px] h-[50px] mr-5 rounded-full border-2 border-black";
+  const commonClasses = "w-[50px] h-[50px] mr rounded-full border-2 border-black";
 
   const letters = () => {
-    const [firstName, lastName] = props.player.name.split(" ");
+    console.log("letters", props.player.name);
+    let [firstName, lastName] = props.player.name.split(" ");
+
+    // FBH: fucking bad hack due to social names
+    if (!lastName || lastName.length === 0) {
+        lastName = " ";
+    }
+
     return (<>{firstName[0] || ""}&nbsp;{lastName[0] || ""}</>);
 
     // return (<>{props.player.name[0] || ""}</>);
@@ -20,7 +27,7 @@ const PlayerImageRounded = (props: Props) => {
   return (
     <>
       <Show when={!imgError()}>
-        <img src={player.avatar} alt=""
+        <img src={player.pic} alt=""
              class={commonClasses}
              onError={() => setImgError(true)}
         />

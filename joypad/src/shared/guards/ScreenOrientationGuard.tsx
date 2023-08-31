@@ -34,7 +34,7 @@ const ScreenOrientationGuard = (props: Props) => {
         props.children
       }
       <Show when={orientation() === "landscape"}>
-        <div class={"absolute inset-0 z-50 bg-[url('/src/assets/bg.png')] bg-no-repeat bg-cover flex items-center justify-center text-white flex-col"}>
+        <div class={"absolute inset-0 z-50 bg-[url('/src/assets/bg.jpg')] bg-no-repeat bg-cover flex items-center justify-center text-white flex-col"}>
           <p class={"text-2xl"}>NOPE!</p>
           <span>
             Devi usare lo smartphone in verticale per poter giocare, grazie!

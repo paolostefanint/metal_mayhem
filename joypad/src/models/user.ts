@@ -5,15 +5,15 @@ export interface BattleInfoCurrentPlayer {
   sessionId: string
   sub: string
   avatar: string
+  pic: string
   color: string
-  resources: number
-  score: number
-  development: number
-  milestones_reached: number
+  life: number
+  spriteState: string
 }
 
 export interface PlayerDetail {
   name: string
   connected: boolean
   avatar: string
+  pic: string
 }

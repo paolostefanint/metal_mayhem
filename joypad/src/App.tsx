@@ -44,11 +44,11 @@ const App: Component = () => {
 
   return (
     <Routes>
-      <Route path="/" component={Landing} />
-      <Route path="/battle" component={battlePage}>
+      <Route path="/j/" component={Landing} />
+      <Route path="/j/battle" component={battlePage}>
         <Route path="" component={Battle} />
       </Route>
-      <Route path="/viewer" component={viewerPage} />
+      <Route path="/j/viewer" component={viewerPage} />
     </Routes>
   );
 };

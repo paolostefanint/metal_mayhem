@@ -30,7 +30,8 @@ const BattleLayout = () => {
               <div class={"flex items-center"}>
                 <PlayerImageRounded player={{
                   name: useAuth?.user?.name || "",
-                  avatar: useAuth?.user?.picture || "",
+                  avatar: "TestAvatar",
+                  pic: useAuth?.user?.picture || "",
                   connected: true
                 }}/>&nbsp;{useAuth?.user?.name}
               </div>

@@ -1,230 +1,265 @@
-import {createStore} from "solid-js/store";
-import {DEVELOPMENT_AT_END_ROUND, LEVELS, RESOURCES_AT_END_ROUND, SLIDER_TYPE} from "../../../shared/constants";
-import {createEffect, createMemo, createSignal, For, onMount} from "solid-js";
-import {BattleInfoCurrentPlayer} from "../../../models/user";
-import JoyPadInput from "../../../shared/components/JoyPadInput";
-import {valueBetweenMinAndMax} from "../../../shared/helpers";
+import { createStore } from "solid-js/store";
+import { onCleanup, createSignal, onMount } from "solid-js";
+import { BattleInfoCurrentPlayer } from "../../../models/user";
 import Splash from "../../../shared/icons/Splash";
-import LevelUp from "../../../shared/components/LevelUp";
-import InstructionButton from "../../../shared/components/InstructionButton";
+import p5 from "p5";
 
-interface SliderState {
-  military: ResourceType
-  production: ResourceType
-  research: ResourceType
+interface JoypadState {
+    movement: [number, number];
+    attack: boolean;
 }
 
-interface ResourceType {
-  value: number
-  disabled: boolean
-}
-
-const initialState: SliderState = {
-  military: {
-    value: 34,
-    disabled: false
-  },
-  production: {
-    value: 33,
-    disabled: false
-  },
-  research: {
-    value: 33,
-    disabled: false
-  },
-}
+const initialState: JoypadState = {
+    movement: [0, 0],
+    attack: false,
+};
 
 interface JoyPadProps {
-  onChange: ({military, research, production}: {military: number, research: number, production: number}) => void,
-  playerStats: BattleInfoCurrentPlayer
+    onChange: ({
+        movement,
+        attack,
+    }: {
+        movement: [number, number];
+        attack: boolean;
+    }) => void;
+    playerStats: BattleInfoCurrentPlayer;
 }
 
-const JoyPad = ({onChange, playerStats}: JoyPadProps) => {
-  const [joyPadStore, setJoyPadStore] = createStore<SliderState>(initialState);
-  const [showLevelUp, setShowLevelUp] = createSignal<boolean>(false);
-  const MIN = 0;
-  const MAX = 100;
+const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
+    const [joyPadStore, setJoyPadStore] =
+        createStore<JoypadState>(initialState);
+    const [p5Instance, setP5Instance] = createSignal<p5 | null>(null);
+    let canvas;
 
-  onMount(() => {
-    setJoyPadStore("military", "value", 34);
-    setJoyPadStore("production", "value", 33);
-    setJoyPadStore("research", "value", 33);
+    const sketch = (p: p5) => {
+        let joystickCenter: [number, number] = [150, 150];
+        let joystickRadius = 100;
 
-    (document.querySelector('#' + SLIDER_TYPE.MILITARY.toLowerCase()) as HTMLInputElement).value = "34";
-    (document.querySelector('#' + SLIDER_TYPE.PRODUCTION.toLowerCase()) as HTMLInputElement).value = "33";
-    (document.querySelector('#' + SLIDER_TYPE.RESEARCH.toLowerCase()) as HTMLInputElement).value = "33";
-  });
+        let buttonCenter = [150, 400]; 
+        const JOYPAD_SPLIT = 1.5;
 
-  createEffect((prev) => {
-    // Avoid animation if someone refreshes the page
-    if (playerStats.milestones_reached > 0 && prev !== playerStats.milestones_reached) {
-      levelUp();
-    }
-  }, playerStats.milestones_reached)
+        let canvasWidth = 300;
+        let canvasHeight = 500;
 
-  const levelUp = () => {
-    setShowLevelUp(true);
+        let inputs: JoypadState = {
+            movement: [0, 0],
+            attack: false,
+        };
 
-    setTimeout(() => {
-      setShowLevelUp(false)
-    }, 700);
-  }
+        let orientation = screen.orientation.type;
 
-  const handleSliderInput = (value: number, type: SLIDER_TYPE) => {
+        const field = document.getElementById("field") as HTMLDivElement;
 
-    if (value < MIN || value > MAX) return;
+        const isPortrait = () => screen.orientation.type.startsWith("portrait");
+        const isLandscape = () =>
+            screen.orientation.type.startsWith("landscape");
 
-    const sum = getTotal();
-    const maxTotal = 100;
-    const blocked = 0;
+        const handleJoystickTouch = (touch: any) => {
+            // get diff vector from joystick center to touch
+            const diff = [
+                touch.x - joystickCenter[0],
+                touch.y - joystickCenter[1],
+            ];
 
-    setJoyPadStore(type.toLowerCase() as SLIDER_TYPE, (oldValue) => {
-      let updateValue = value;
-      const difference = value - oldValue.value;
-      const MAX_STEP_DIFF = 7;
+            // limit diff vector to joystick area using trigonometry
+            const diffMax = diff.map((v) =>
+                Math.min(Math.max(v, -joystickRadius), joystickRadius),
+            );
 
-      // Doesn't allow big input range step difference from prev and next value!
-      if (Math.abs(difference) > MAX_STEP_DIFF) {
-        updateValue = difference > 0 ? oldValue.value + MAX_STEP_DIFF : oldValue.value - MAX_STEP_DIFF;
-      }
+            // draw diff vector
+            p.stroke(255, 0, 0);
+            p.strokeWeight(2);
+            p.line(
+                joystickCenter[0],
+                joystickCenter[1],
+                joystickCenter[0] + diffMax[0],
+                joystickCenter[1] + diffMax[1],
+            );
 
-      (document.querySelector('#' + type.toLowerCase()) as HTMLInputElement).value = Math.round(updateValue).toString();
+            // normalize diff vector
+            const diffNorm = diffMax.map((v) => v / joystickRadius);
 
-      return { value: Math.round(updateValue) };
+            p.noStroke();
+
+            p.ellipse(
+                joystickCenter[0] + diffMax[0],
+                joystickCenter[1] + diffMax[1],
+                50,
+                50,
+            );
+
+            // p.fill(0);
+            // p.text(touch.id, touch.x, touch.y);
+
+            inputs.movement = [diffNorm[0], diffNorm[1]];
+        };
+
+        const handleButtonTouch = (touch: any) => {
+
+            // draw button pressed
+            p.fill(255, 0, 0);
+            p.ellipse(buttonCenter[0], buttonCenter[1], 50, 50);
+
+
+            inputs.attack = true;
+        };
+
+        const resetInputs = () => {
+            inputs = {
+                movement: [0, 0],
+                attack: false,
+            };
+        };
+
+        const drawJoypadBase = () => {
+            if (isPortrait()) {
+                joystickCenter = [canvasWidth / 2, 150];
+                joystickRadius = canvasWidth / 4;
+                buttonCenter = [canvasWidth / 2, canvasHeight - 100];
+            } else {
+                // landscape
+                joystickCenter = [canvasWidth / 4, canvasHeight / 2];
+                joystickRadius = canvasHeight / 4;
+                buttonCenter = [
+                    canvasWidth / 2 + canvasWidth / 4,
+                    canvasHeight / 2,
+                ];
+            }
+        };
+
+        p.setup = () => {
+            canvasWidth = field.offsetWidth;
+            canvasHeight = field.offsetHeight;
+
+            canvas = p.createCanvas(canvasWidth, canvasHeight);
+            canvas.parent("field");
+
+            drawJoypadBase();
+
+            p.background(51);
+            p.frameRate(10);
+        };
+
+        p.windowResized = () => {
+            console.log("resized");
+            canvasWidth = field.offsetWidth;
+            if (isLandscape()) {
+            canvasHeight = Math.min(field.offsetHeight, 300);
+} else {
+            canvasHeight = Math.min(field.offsetHeight, 500);
+}
+            p.resizeCanvas(canvasWidth, canvasHeight);
+            drawJoypadBase();
+        };
+
+        p.draw = () => {
+            resetInputs();
+            p.background(51);
+
+            drawJoystickArea(p, joystickCenter, joystickRadius);
+
+            drawButtons(p, buttonCenter);
+
+            p.fill(255);
+
+            for (let i = 0; i < p.touches.length; i++) {
+                const touch = p.touches[i] as any;
+
+                if (isPortrait()) {
+                    if (touch.y < canvasHeight / JOYPAD_SPLIT) {
+                        // joystick area
+                        console.log("joystick area");
+                        handleJoystickTouch(touch);
+                    }
+
+                    if (touch.y > canvasHeight / JOYPAD_SPLIT) {
+                        // button area
+                        console.log("button area");
+                        handleButtonTouch(touch);
+                    }
+                }
+                if (isLandscape()) {
+                    if (touch.x < canvasWidth / JOYPAD_SPLIT) {
+                        // joystick area
+                        console.log("joystick area");
+                        handleJoystickTouch(touch);
+                    }
+
+                    if (touch.x > canvasWidth / JOYPAD_SPLIT) {
+                        // button area
+                        console.log("button area");
+                        handleButtonTouch(touch);
+                    }
+                }
+            }
+
+            onChange({
+                movement: inputs.movement,
+                attack: inputs.attack,
+            });
+        };
+    };
+
+    onMount(() => {
+        setP5Instance(new p5(sketch));
     });
 
-    if (sum > maxTotal || sum < maxTotal) {
-      for (let sliderType in SLIDER_TYPE) {
-        if (type !== sliderType && !joyPadStore[sliderType.toLowerCase() as SLIDER_TYPE].disabled) {
-          setJoyPadStore(sliderType.toLowerCase() as SLIDER_TYPE,(oldValue) => {
-            const newValue = Math.round(valueBetweenMinAndMax(oldValue.value - ((sum - maxTotal) / (2 - blocked)), MIN, MAX));
-
-            (document.querySelector('#' + sliderType.toLowerCase()) as HTMLInputElement).value = newValue.toString();
-
-            return { value: newValue };
-          });
-        }
-      }
-    }
-  }
-
-  const getTotal = createMemo(() => {
-    return joyPadStore.research.value + joyPadStore.production.value + joyPadStore.military.value;
-  })
-
-  const handleSliderChange = () => {
-    onChange({
-      military: joyPadStore.military.value / 100,
-      production: joyPadStore.production.value / 100,
-      research: joyPadStore.research.value / 100
+    onCleanup(() => {
+        p5Instance()?.remove();
     });
-  }
 
-  const triggerLock = (type: SLIDER_TYPE) => {
-    setJoyPadStore(type.toLowerCase() as SLIDER_TYPE, (oldValue) => {
-      return { disabled: !oldValue.disabled };
-    });
-  }
+    return (
+        <div class={"flex flex-col flex-1"}>
+            {/*
+            <div class={"flex"}>
+                <div class={"flex-1 flex flex-col items-center text-white"}>
+                    <span class={"text-xl text-grey mb-1"}>Colore</span>
+                    <Splash color={playerStats.color} />
+                </div>
+            </div>
+            */}
 
-  const isInputDisabled = (type: SLIDER_TYPE) => {
-    return joyPadStore[type.toLowerCase() as SLIDER_TYPE].disabled;
-  }
-
-  return (
-    <div class={"flex flex-col flex-1"}>
-      <div class={"flex"}>
-        <div class={"flex-1 flex flex-col items-center text-white"}>
-          <span class={"text-xl text-grey mb-1"}>Colore</span>
-          <Splash color={playerStats.color}/>
+            <div class={"flex flex-col flex-1"}>
+                <div id={"field"} ref={canvas} class={"min-h-full"}></div>
+            </div>
         </div>
-        <div class={"flex-1 flex flex-col items-center text-white"}>
-          <span class={"text-xl text-grey mb-1"}>Bombolette</span>
-          <span class={"text-3xl"}>{playerStats.resources}</span>
-        </div>
-        <div class={"flex-1 flex flex-col items-center text-white"}>
-          <span class={"text-xl text-grey mb-1"}>Mattoni</span>
-          <span class={"text-3xl"}>{playerStats.score}</span>
-        </div>
-      </div>
-      <div class={"flex justify-between"}>
-        <p class={"mt-3 mb-2 text-white text-xl"}>
-          Livello {playerStats.milestones_reached + 1}/{LEVELS.length - 1}: {LEVELS[playerStats.milestones_reached + 1]}
-        </p>
-        <p>
-          <InstructionButton/>
-        </p>
-      </div>
+    );
+};
 
-      <div class={"flex gap-1"}>
-        <div class={"flex-1"}>
-          <div class={"h-2 bg-grey rounded-full"}>
-            {playerStats.milestones_reached + 1 < 10 && <div class={"h-2 bg-white rounded-full transition-all ease-linear duration-500"} style={`width: ${playerStats.development}%`}/>}
-          </div>
-        </div>
+function drawJoystickArea(
+    p: p5,
+    joystickCenter: number[],
+    joystickRadius: number,
+) {
+    // draw a cross on joystick center
+    p.stroke(255);
+    p.strokeWeight(2);
+    p.line(
+        joystickCenter[0] - 10,
+        joystickCenter[1],
+        joystickCenter[0] + 10,
+        joystickCenter[1],
+    );
+    p.line(
+        joystickCenter[0],
+        joystickCenter[1] - 10,
+        joystickCenter[0],
+        joystickCenter[1] + 10,
+    );
 
+    // draw a circle to indicate joystick area
+    p.noFill();
+    p.stroke(255, 255, 255, 100);
+    p.strokeWeight(1);
+    p.circle(joystickCenter[0], joystickCenter[1], joystickRadius * 2);
+}
 
-        {/*<For each={[...Array(10).keys()]}>*/}
-        {/*  {(item, index) =>*/}
-        {/*    <div class={"flex-1"}>*/}
-        {/*      <Splash color={index() < playerStats.milestones_reached + 1 ? "#F2C94C" : "#FFFFFF"}/>*/}
-        {/*    </div>*/}
-        {/*  }*/}
-        {/*</For>*/}
-      </div>
-
-      <div class={"blue-rounded-container m-auto pb-5"}>
-
-        {/*<div class={"flex justify-between items-center px-5 mb-3"}>*/}
-        {/*  <span class={"text-white"}>Controlli</span>*/}
-        {/*  <InstructionButton/>*/}
-        {/*</div>*/}
-
-        <div class={"flex justify-between items-end px-1"}>
-
-          <JoyPadInput
-            value={joyPadStore.military.value}
-            type={SLIDER_TYPE.MILITARY}
-            max={100}
-            min={0}
-            label={"Potenza spruzzo"}
-            isDisabled={isInputDisabled(SLIDER_TYPE.MILITARY)}
-            onChange={handleSliderChange}
-            onInput={handleSliderInput}
-            onLock={triggerLock}
-            labelFormula={(value) => (`${Math.ceil(value)}<br>&nbsp;`)}
-          />
-
-          <JoyPadInput
-            value={joyPadStore.production.value}
-            type={SLIDER_TYPE.PRODUCTION}
-            max={100}
-            min={0}
-            label={"Capacità di raccolta"}
-            isDisabled={isInputDisabled(SLIDER_TYPE.PRODUCTION)}
-            onChange={handleSliderChange}
-            onInput={handleSliderInput}
-            onLock={triggerLock}
-            labelFormula={(value) => (`${((value / 100) * RESOURCES_AT_END_ROUND).toFixed(1)}<br>/turn`)}
-          />
-
-          <JoyPadInput
-            value={joyPadStore.research.value}
-            type={SLIDER_TYPE.RESEARCH}
-            max={100}
-            min={0}
-            label={"Velocità di apprendimento"}
-            isDisabled={isInputDisabled(SLIDER_TYPE.RESEARCH)}
-            onChange={handleSliderChange}
-            onInput={handleSliderInput}
-            onLock={triggerLock}
-            labelFormula={(value) => (`${((value / 100) * DEVELOPMENT_AT_END_ROUND).toFixed(1)}<br>/turn`)}
-          />
-        </div>
-      </div>
-
-      <LevelUp show={showLevelUp()}/>
-    </div>
-  )
+function drawButtons(p: p5, buttonCenter: number[]) {
+    // draw a circle to indicate joystick area
+    p.noFill();
+    p.stroke(255, 255, 255, 100);
+    p.strokeWeight(1);
+    p.circle(buttonCenter[0], buttonCenter[1], 50);
 }
 
 export default JoyPad;
