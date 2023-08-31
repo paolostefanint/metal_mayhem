@@ -11,8 +11,8 @@ services:
       - "7000:7000"
       - "7001:7001"
     environment:
-      - CORE_SENDING_ADDRESS=ws://engine-core:40010
-      - CORE_RECEIVING_ADDRESS=ws://engine-core:42000
+      - CORE_SENDING_ADDRESS=ws://core:40010
+      - CORE_RECEIVING_ADDRESS=ws://core:42000
 
   core:
     build: ./core

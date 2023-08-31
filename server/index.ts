@@ -8,16 +8,23 @@ import express from "express";
 import { Globals } from "./src/global";
 import { getRoomLogger, LogLevel } from "./src/logging";
 import { Server as WebSocketServer } from "ws"
+import "dotenv/config";
 const multiplayerServerPort = Number(process.env.SERVER_PORT) || 7000;
 const viewerServerPort = Number(process.env.VIEWER_PORT) || 7001;
 
 
 
-
 async function startGameServer() {
+
+    const app = express();
+    const server = http.createServer(app);
+
+
     const gameServer = new Server({
         // server: createServer(app),
-        transport: new WebSocketTransport({}),
+        transport: new WebSocketTransport({
+            server
+        }),
     });
 
     gameServer.define("battle", BattleRoom);

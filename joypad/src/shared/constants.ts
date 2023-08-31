@@ -1,7 +1,10 @@
 const url = new URL(window.location.href);
 const HOSTNAME = `${url.protocol}//${url.hostname}${url.port ? `:${url.port}` : ''}`;
 const HOSTNAME_NO_PROTOCOL = `${url.hostname}${url.port ? `:${url.port}` : ''}`;
-const AUTH_REDIRECT_URI = `${HOSTNAME}/j`;
+
+const AUTH_REDIRECT_URI = `${HOSTNAME}/j/`;
+console.log("AUTH_REDIRECT_URI", AUTH_REDIRECT_URI);
+
 enum SLIDER_TYPE {
   MILITARY = "military",
   PRODUCTION = "production",

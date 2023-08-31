@@ -1,16 +1,17 @@
 import WebSocket from "ws";
-import * as dotenv from "dotenv";
 import {EventEmitter} from "events";
 import {getRoomLogger, LogLevel} from "./logging";
 
-dotenv.config();
 
 export interface SendingSocket {
     send: (message: string) => void;
 }
 
-const CORE_SENDING_ADDRESS = process.env.CORE_SENDING_ADDRESS || "ws://0.0.0.0:40010";
-const CORE_RECEIVING_ADDRESS = process.env.CORE_RECEIVING_ADDRESS || "ws://0.0.0.0:42000";
+const CORE_SENDING_ADDRESS = process.env.CORE_SENDING_ADDRESS;
+const CORE_RECEIVING_ADDRESS = process.env.CORE_RECEIVING_ADDRESS;
+
+console.log("CORE_SENDING_ADDRESS: " + CORE_SENDING_ADDRESS);
+console.log("CORE_RECEIVING_ADDRESS: " + CORE_RECEIVING_ADDRESS);
 
 function createCoreSendingSocket(): SendingSocket {
     
