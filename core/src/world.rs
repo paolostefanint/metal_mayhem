@@ -105,6 +105,7 @@ impl GameWorld {
             attack: player.input.attack,
             health: player.stats.health,
             sprite_state: player.sprite_state.clone(),
+            damaged: player.is_taking_damage(),
         });
         return players.collect();
     }
@@ -130,6 +131,7 @@ pub struct PlayerState {
     pub attack: bool,
     pub health: f32,
     pub sprite_state: SpriteState,
+    pub damaged: bool,
 }
 
 impl GameWorld {

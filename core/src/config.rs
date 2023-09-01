@@ -38,6 +38,7 @@ pub struct Config {
     pub world_size: (f32, f32),
     pub round_duration: u64,
     pub player_size: (f32, f32),
+    pub damage_duration: f32,
     pub hitbox: HitboxConfig,
     pub tizia: TiziaConfig,
     pub gundam: GundamConfig,
@@ -60,7 +61,11 @@ pub fn init_config() -> () {
 
     let program_config = Config {
         world_size: (world_size_x, world_size_y),
-        round_duration: round_duration,
+        round_duration,
+        damage_duration: config
+            .getfloat("player", "damage_duration")
+            .unwrap()
+            .unwrap() as f32,
         player_size: (
             config.getfloat("player", "size_x").unwrap().unwrap() as f32,
             config.getfloat("player", "size_y").unwrap().unwrap() as f32,

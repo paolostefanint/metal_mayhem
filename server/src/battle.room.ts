@@ -256,6 +256,7 @@ export class BattleRoom extends Room<ClientState> {
             p.position.x = corePlayer.p[0];
             p.position.y = corePlayer.p[1];
             p.spriteState = corePlayer.sprite_state;
+            p.damaged = corePlayer.damaged;
         });
     }
 

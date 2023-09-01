@@ -7,6 +7,7 @@ export type CorePlayer = {
     attack: boolean;
     health: number;
     sprite_state: string;
+    damaged: boolean;
 };
 
 export type CoreMessage = {

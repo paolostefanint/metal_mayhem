@@ -33,6 +33,7 @@ export class Player extends Schema {
     @type("string") direction: string;
     @type("string") score: number;
     @type("string") spriteState: string;
+    @type("boolean") damaged: boolean;
 }
 
 export class GameState extends Schema {

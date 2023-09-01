@@ -1,6 +1,7 @@
 use super::collisions::{Body, BodyType, AABB};
 use super::world::Direction;
 use crate::config::CONFIG;
+use std::time::Instant;
 
 use crate::world::GameEntity;
 use serde::{Deserialize, Serialize};
@@ -42,6 +43,7 @@ pub struct Player {
     pub input: PlayerInputs,
     pub direction: Direction,
     pub sprite_state: SpriteState,
+    pub last_damage_time: Option<Instant>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -98,12 +100,20 @@ impl Player {
             direction: Direction::R,
             input: PlayerInputs::new(),
             sprite_state: SpriteState::Idle,
+            last_damage_time: None,
         }
     }
     pub fn take_damage(&mut self, damage: f32) {
         // go to max(0, health - damage)
         self.stats.health = (self.stats.health - damage).max(0.0);
         self.sprite_state = SpriteState::Damage;
+        self.last_damage_time = Some(Instant::now());
+    }
+    pub fn is_taking_damage(&self) -> bool {
+        match self.last_damage_time {
+            Some(_) => true,
+            None => false,
+        }
     }
 }
 
@@ -159,6 +169,19 @@ impl GameEntity for Player {
         } else {
             SpriteState::Idle
         };
+
+        let config = CONFIG.get().unwrap();
+
+        match self.last_damage_time {
+            Some(last_damage_time) => {
+                let now = Instant::now();
+                let elapsed = now.duration_since(last_damage_time);
+                if elapsed.as_secs_f32() > config.damage_duration {
+                    self.last_damage_time = None;
+                }
+            }
+            None => {}
+        }
     }
 }
 
