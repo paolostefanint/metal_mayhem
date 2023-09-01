@@ -1,4 +1,5 @@
 mod collisions;
+mod config;
 mod game;
 mod input;
 mod map;
@@ -7,16 +8,13 @@ mod player;
 mod render;
 mod world;
 
+use config::{init_config, CONFIG};
 use game::Game;
 use input::start_server_listening_websocket;
 use output::start_client_connections;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-
-pub const WORLD_SIZE: (f32, f32) = (20.0, 20.0);
-// diration in seconds
-pub const ROUND_DURATION: u64 = 30;
 
 #[derive(Debug)]
 pub enum ServerCommand {
@@ -32,13 +30,23 @@ pub struct ServerCommandMessage {
 
 #[tokio::main]
 async fn main() {
+    init_config();
+    let config = CONFIG.get().unwrap();
+    let game = Some(Game::new());
+
     let (tx, rx): (Sender<ServerCommandMessage>, Receiver<ServerCommandMessage>) = mpsc::channel();
 
     // listening for server commands
     let _ = start_server_listening_websocket(tx).await;
 
-    let game = Game::new(WORLD_SIZE);
-    let game_arc = Arc::new(Mutex::new(game));
+    let game_arc = Arc::new(Mutex::new(game.unwrap()));
+
+    {
+        // game setup
+        let game_clone = game_arc.clone();
+        let mut game = game_clone.lock().unwrap();
+        game.setup(config.world_size);
+    }
 
     let game_clone = game_arc.clone();
     let _ = start_client_connections(game_clone).await;

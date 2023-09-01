@@ -1,6 +1,7 @@
 use super::collisions::Body;
 use super::game::GamePhase;
 use super::player::{EntityType, Player};
+use crate::config::CONFIG;
 use crate::player::{PlayerHitBox, SpriteState};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -43,13 +44,24 @@ pub trait GameEntity {
     }
 }
 
+struct PlayerStats {
+    id: u32,
+    attack: f32,
+    defense: f32,
+}
+
 impl GameWorld {
-    pub fn new(world_size: (f32, f32)) -> GameWorld {
+    pub fn new() -> GameWorld {
+        let default_size = (20.0, 20.0);
         return GameWorld {
             current_time: Instant::now(),
-            size: world_size,
+            size: default_size,
             entities: HashMap::new(),
         };
+    }
+
+    pub fn setup(&mut self, world_size: (f32, f32)) {
+        self.size = world_size;
     }
 
     pub fn get_players(&self) -> Vec<&Player> {
@@ -138,14 +150,15 @@ impl GameWorld {
         let mut hitboxes: Vec<PlayerHitBox> = vec![];
 
         let world_size = self.size.clone();
+        let config = CONFIG.get().unwrap();
 
         for player in self.get_players_mut() {
             if player.input.attack {
                 let hitbox_position = match player.direction {
-                    Direction::L => (player.position.0 - 1.0, player.position.1),
-                    Direction::R => (player.position.0 + 1.0, player.position.1),
+                    Direction::L => (player.position.0 - config.hitbox.diff_x, player.position.1),
+                    Direction::R => (player.position.0 + config.hitbox.diff_y, player.position.1),
                 };
-                let hitbox_size = (1.0, 1.0);
+                let hitbox_size = (config.hitbox.size_x, config.hitbox.size_y);
                 let hitbox = PlayerHitBox::new(player.get_id(), hitbox_size, hitbox_position);
                 hitboxes.push(hitbox);
                 player.sprite_state = SpriteState::Attack;
@@ -172,12 +185,22 @@ impl GameWorld {
             // if so, move them back in bounds
         }
 
+        let mut players_stats: HashMap<u32, PlayerStats> = HashMap::new();
+        for player in self.get_players() {
+            let player_stats = PlayerStats {
+                id: player.id,
+                attack: player.stats.attack,
+                defense: player.stats.defense,
+            };
+            players_stats.insert(player.id, player_stats);
+        }
+
         for hitbox in hitboxes {
             for player in self.get_players_mut() {
                 // check collisions on player
                 if hitbox.player_id != player.id && hitbox.collides_with(&player) {
-                    println!("player hit");
-                    player.take_damage(1.0);
+                    let damage = players_stats.get(&hitbox.player_id).unwrap().attack;
+                    player.take_damage(damage);
                 }
             }
         }

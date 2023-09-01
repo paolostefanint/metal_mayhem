@@ -7,8 +7,8 @@ export interface SendingSocket {
     send: (message: string) => void;
 }
 
-const CORE_SENDING_ADDRESS = process.env.CORE_SENDING_ADDRESS;
-const CORE_RECEIVING_ADDRESS = process.env.CORE_RECEIVING_ADDRESS;
+const CORE_SENDING_ADDRESS = process.env.CORE_SENDING_ADDRESS || "ws://localhost:40010";
+const CORE_RECEIVING_ADDRESS = process.env.CORE_RECEIVING_ADDRESS || "ws://localhost:42000";
 
 console.log("CORE_SENDING_ADDRESS: " + CORE_SENDING_ADDRESS);
 console.log("CORE_RECEIVING_ADDRESS: " + CORE_RECEIVING_ADDRESS);

@@ -1,6 +1,6 @@
 use super::game::Game;
 use super::world::GameState;
-use crate::ROUND_DURATION;
+use crate::config::CONFIG;
 use futures_util::SinkExt;
 use serde_json;
 use std::sync::{Arc, Mutex};
@@ -51,23 +51,22 @@ pub async fn start_client_connections(game: Arc<Mutex<Game>>) -> Result<(), Erro
 }
 
 fn get_game_state(game: Arc<Mutex<Game>>) -> String {
-    {
-        let game = game.lock().unwrap();
-        let world = game.get_world();
+    let game = game.lock().unwrap();
+    let world = game.get_world();
+    let config = CONFIG.get().unwrap();
 
-        let game_state = GameState {
-            current_state: game.phase,
-            elapsed_time: match game.started_at {
-                Some(started_at) => started_at.elapsed().as_secs_f32(),
-                None => 0.0,
-            },
-            remaining_time: match game.started_at {
-                Some(started_at) => (ROUND_DURATION as f32) - started_at.elapsed().as_secs_f32(),
-                None => 0.0,
-            },
-            players: world.get_players_state(),
-        };
-        let game_state_json = serde_json::to_string(&game_state).unwrap();
-        return game_state_json;
-    }
+    let game_state = GameState {
+        current_state: game.phase,
+        elapsed_time: match game.started_at {
+            Some(started_at) => started_at.elapsed().as_secs_f32(),
+            None => 0.0,
+        },
+        remaining_time: match game.started_at {
+            Some(started_at) => (config.round_duration as f32) - started_at.elapsed().as_secs_f32(),
+            None => 0.0,
+        },
+        players: world.get_players_state(),
+    };
+    let game_state_json = serde_json::to_string(&game_state).unwrap();
+    return game_state_json;
 }

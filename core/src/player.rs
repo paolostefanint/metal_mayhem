@@ -1,5 +1,6 @@
 use super::collisions::{Body, BodyType, AABB};
 use super::world::Direction;
+use crate::config::CONFIG;
 
 use crate::world::GameEntity;
 use serde::{Deserialize, Serialize};
@@ -65,24 +66,26 @@ impl Player {
             _ => Avatar::Tizia,
         };
 
+        let config = CONFIG.get().unwrap();
+
         let stats = match avatar {
             Avatar::Tizia => PlayerStats {
-                attack: 10.0,
-                defense: 10.0,
-                max_speed: 5.0,
-                health: 100.0,
+                attack: config.tizia.attack,
+                defense: config.tizia.defense,
+                max_speed: config.tizia.speed,
+                health: config.tizia.health,
             },
             Avatar::Gundam => PlayerStats {
-                attack: 10.0,
-                defense: 10.0,
-                max_speed: 5.0,
-                health: 100.0,
+                attack: config.gundam.attack,
+                defense: config.gundam.defense,
+                max_speed: config.gundam.speed,
+                health: config.gundam.health,
             },
             Avatar::Coso => PlayerStats {
-                attack: 10.0,
-                defense: 10.0,
-                max_speed: 5.0,
-                health: 100.0,
+                attack: config.coso.attack,
+                defense: config.coso.defense,
+                max_speed: config.coso.speed,
+                health: config.coso.health,
             },
         };
 
@@ -90,7 +93,7 @@ impl Player {
             id: player_configuration.player_id,
             stats,
             avatar,
-            size: (1.0, 0.5),
+            size: config.player_size,
             position: player_configuration.initial_position,
             direction: Direction::R,
             input: PlayerInputs::new(),

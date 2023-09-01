@@ -1,6 +1,6 @@
+use crate::config::CONFIG;
 use crate::player::{Player, PlayerInputs};
 use crate::world::GameWorld;
-use crate::ROUND_DURATION;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -19,12 +19,16 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(world_size: (f32, f32)) -> Game {
+    pub fn new() -> Game {
         Game {
             phase: GamePhase::WaitingForPlayers,
             started_at: None,
-            world: GameWorld::new(world_size),
+            world: GameWorld::new(),
         }
+    }
+
+    pub fn setup(&mut self, world_size: (f32, f32)) {
+        self.world.setup(world_size);
     }
 
     pub fn start(&mut self) {
@@ -62,7 +66,8 @@ impl Game {
         match self.started_at {
             Some(started_at) => {
                 let elapsed = started_at.elapsed();
-                elapsed.as_secs() >= ROUND_DURATION
+                let round_duration = CONFIG.get().unwrap().round_duration;
+                elapsed.as_secs() >= round_duration
             }
             None => true,
         }
