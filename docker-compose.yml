@@ -3,29 +3,18 @@ services:
     build: ./nginx
     ports:
       - "8081:80"
-#      - "433:433"
 
   multiplayer-server:
     build: ./server
-    ports:
-      - "7000:7000"
-      - "7001:7001"
     environment:
       - CORE_SENDING_ADDRESS=ws://core:40010
       - CORE_RECEIVING_ADDRESS=ws://core:42000
 
   core:
     build: ./core
-    # ports:
-    #   - "40010:40010"
-    #   - "42000:42000"
 
   joypad:
     build: ./joypad
-    ports:
-      - "3000:3000"
 
   viewer:
     build: ./server/static/viewer
-    ports:
-      - "8000:8000"
