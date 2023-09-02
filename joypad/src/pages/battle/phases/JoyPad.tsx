@@ -90,7 +90,7 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
             p.fill(255, 0, 0);
             p.ellipse(buttonCenter[0], buttonCenter[1], 50, 50);
 
-                inputs.attack = true;
+            inputs.attack = true;
         };
 
         const resetInputs = () => {
