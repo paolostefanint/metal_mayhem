@@ -45,9 +45,7 @@ pub trait GameEntity {
 }
 
 struct PlayerStats {
-    id: u32,
     attack: f32,
-    defense: f32,
 }
 
 impl GameWorld {
@@ -102,7 +100,6 @@ impl GameWorld {
             id: player.id.clone(),
             p: player.position.clone(),
             dir: player.direction.clone(),
-            attack: player.input.attack,
             health: player.stats.health,
             sprite_state: player.sprite_state.clone(),
             damaged: player.is_taking_damage(),
@@ -128,7 +125,6 @@ pub struct PlayerState {
     id: u32,
     pub p: (f32, f32),
     pub dir: Direction,
-    pub attack: bool,
     pub health: f32,
     pub sprite_state: SpriteState,
     pub damaged: bool,
@@ -155,15 +151,44 @@ impl GameWorld {
         let config = CONFIG.get().unwrap();
 
         for player in self.get_players_mut() {
+            // reset attack
+            match player.last_attack_time {
+                Some(last_attack_time) => {
+                    let time_since_last_attack = current_time.duration_since(last_attack_time);
+                    // if cooldown is over, reset last attack time  and go on with attack
+                    if time_since_last_attack.as_secs_f32() > player.stats.cooldown {
+                        player.last_attack_time = None;
+                    } else {
+                        player.sprite_state = SpriteState::Attack;
+                    }
+                }
+                None => {}
+            }
+
+            // attack routine
             if player.input.attack {
-                let hitbox_position = match player.direction {
-                    Direction::L => (player.position.0 - config.hitbox.diff_x, player.position.1),
-                    Direction::R => (player.position.0 + config.hitbox.diff_y, player.position.1),
+                // check last attack time
+                let should_attack = match player.last_attack_time {
+                    Some(_) => false,
+                    None => true,
                 };
-                let hitbox_size = (config.hitbox.size_x, config.hitbox.size_y);
-                let hitbox = PlayerHitBox::new(player.get_id(), hitbox_size, hitbox_position);
-                hitboxes.push(hitbox);
-                player.sprite_state = SpriteState::Attack;
+                println!("player attack");
+
+                if should_attack {
+                    let hitbox_position = match player.direction {
+                        Direction::L => {
+                            (player.position.0 - config.hitbox.diff_x, player.position.1)
+                        }
+                        Direction::R => {
+                            (player.position.0 + config.hitbox.diff_y, player.position.1)
+                        }
+                    };
+                    let hitbox_size = (config.hitbox.size_x, config.hitbox.size_y);
+                    let hitbox = PlayerHitBox::new(player.get_id(), hitbox_size, hitbox_position);
+                    hitboxes.push(hitbox);
+                    player.sprite_state = SpriteState::Attack;
+                    player.last_attack_time = Some(Instant::now());
+                }
             }
             // check if player is out of bounds
 
@@ -190,9 +215,7 @@ impl GameWorld {
         let mut players_stats: HashMap<u32, PlayerStats> = HashMap::new();
         for player in self.get_players() {
             let player_stats = PlayerStats {
-                id: player.id,
                 attack: player.stats.attack,
-                defense: player.stats.defense,
             };
             players_stats.insert(player.id, player_stats);
         }

@@ -9,11 +9,6 @@ interface JoypadState {
     attack: boolean;
 }
 
-const initialState: JoypadState = {
-    movement: [0, 0],
-    attack: false,
-};
-
 interface JoyPadProps {
     onChange: ({
         movement,
@@ -26,8 +21,6 @@ interface JoyPadProps {
 }
 
 const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
-    const [joyPadStore, setJoyPadStore] =
-        createStore<JoypadState>(initialState);
     const [p5Instance, setP5Instance] = createSignal<p5 | null>(null);
     let canvas;
 
@@ -35,7 +28,7 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
         let joystickCenter: [number, number] = [150, 150];
         let joystickRadius = 100;
 
-        let buttonCenter = [150, 400]; 
+        let buttonCenter = [150, 400];
         const JOYPAD_SPLIT = 1.5;
 
         let canvasWidth = 300;
@@ -45,8 +38,6 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
             movement: [0, 0],
             attack: false,
         };
-
-        let orientation = screen.orientation.type;
 
         const field = document.getElementById("field") as HTMLDivElement;
 
@@ -95,13 +86,11 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
         };
 
         const handleButtonTouch = (touch: any) => {
-
             // draw button pressed
             p.fill(255, 0, 0);
             p.ellipse(buttonCenter[0], buttonCenter[1], 50, 50);
 
-
-            inputs.attack = true;
+                inputs.attack = true;
         };
 
         const resetInputs = () => {
@@ -144,10 +133,10 @@ const JoyPad = ({ onChange, playerStats }: JoyPadProps) => {
             console.log("resized");
             canvasWidth = field.offsetWidth;
             if (isLandscape()) {
-            canvasHeight = Math.min(field.offsetHeight, 300);
-} else {
-            canvasHeight = Math.min(field.offsetHeight, 500);
-}
+                canvasHeight = Math.min(field.offsetHeight, 300);
+            } else {
+                canvasHeight = Math.min(field.offsetHeight, 500);
+            }
             p.resizeCanvas(canvasWidth, canvasHeight);
             drawJoypadBase();
         };

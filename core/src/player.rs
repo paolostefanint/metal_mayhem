@@ -31,6 +31,7 @@ pub struct PlayerStats {
     pub defense: f32,
     pub max_speed: f32,
     pub health: f32,
+    pub cooldown: f32,
 }
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -44,6 +45,7 @@ pub struct Player {
     pub direction: Direction,
     pub sprite_state: SpriteState,
     pub last_damage_time: Option<Instant>,
+    pub last_attack_time: Option<Instant>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -76,18 +78,21 @@ impl Player {
                 defense: config.tizia.defense,
                 max_speed: config.tizia.speed,
                 health: config.tizia.health,
+                cooldown: config.tizia.cooldown,
             },
             Avatar::Gundam => PlayerStats {
                 attack: config.gundam.attack,
                 defense: config.gundam.defense,
                 max_speed: config.gundam.speed,
                 health: config.gundam.health,
+                cooldown: config.gundam.cooldown,
             },
             Avatar::Coso => PlayerStats {
                 attack: config.coso.attack,
                 defense: config.coso.defense,
                 max_speed: config.coso.speed,
                 health: config.coso.health,
+                cooldown: config.coso.cooldown,
             },
         };
 
@@ -101,6 +106,7 @@ impl Player {
             input: PlayerInputs::new(),
             sprite_state: SpriteState::Idle,
             last_damage_time: None,
+            last_attack_time: None,
         }
     }
     pub fn take_damage(&mut self, damage: f32) {

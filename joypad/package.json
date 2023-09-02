@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "vite",
-    "dev": "vite --port 8001",
+    "dev": "vite --port 8081",
     "build": "vite build",
     "serve": "vite preview"
   },

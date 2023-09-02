@@ -7,6 +7,7 @@ pub struct TiziaConfig {
     pub defense: f32,
     pub speed: f32,
     pub health: f32,
+    pub cooldown: f32,
 }
 
 #[derive(Debug)]
@@ -15,6 +16,7 @@ pub struct GundamConfig {
     pub defense: f32,
     pub speed: f32,
     pub health: f32,
+    pub cooldown: f32,
 }
 
 #[derive(Debug)]
@@ -23,6 +25,7 @@ pub struct CosoConfig {
     pub defense: f32,
     pub speed: f32,
     pub health: f32,
+    pub cooldown: f32,
 }
 
 #[derive(Debug)]
@@ -81,18 +84,21 @@ pub fn init_config() -> () {
             defense: config.getfloat("tizia", "defense").unwrap().unwrap() as f32,
             speed: config.getfloat("tizia", "speed").unwrap().unwrap() as f32,
             health: config.getfloat("tizia", "health").unwrap().unwrap() as f32,
+            cooldown: config.getfloat("tizia", "cooldown").unwrap().unwrap() as f32,
         },
         gundam: GundamConfig {
             attack: config.getfloat("gundam", "attack").unwrap().unwrap() as f32,
             defense: config.getfloat("gundam", "defense").unwrap().unwrap() as f32,
             speed: config.getfloat("gundam", "speed").unwrap().unwrap() as f32,
             health: config.getfloat("gundam", "health").unwrap().unwrap() as f32,
+            cooldown: config.getfloat("gundam", "cooldown").unwrap().unwrap() as f32,
         },
         coso: CosoConfig {
             attack: config.getfloat("coso", "attack").unwrap().unwrap() as f32,
             defense: config.getfloat("coso", "defense").unwrap().unwrap() as f32,
             speed: config.getfloat("coso", "speed").unwrap().unwrap() as f32,
             health: config.getfloat("coso", "health").unwrap().unwrap() as f32,
+            cooldown: config.getfloat("coso", "cooldown").unwrap().unwrap() as f32,
         },
     };
 
