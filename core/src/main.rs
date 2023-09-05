@@ -52,7 +52,12 @@ async fn main() {
     let _ = start_client_connections(game_clone).await;
 
     loop {
-        let received = rx.recv().unwrap();
+        let received = match rx.recv() {
+            Ok(received) => received,
+            Err(_) => {
+                continue;
+            }
+        };
 
         match received.command {
             ServerCommand::Start => start_game(game_arc.clone(), received.data),

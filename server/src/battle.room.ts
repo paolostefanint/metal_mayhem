@@ -8,6 +8,7 @@ import { parseCoreMessage, CoreMessage, CorePlayer } from "./message-handling";
 import { CoreStates } from "./state";
 import { GameStates, FSM } from "./fsm";
 import { getRoomLogger, LogLevel } from "./logging";
+import { Queue } from "./queue";
 
 const SERVER_TO_CLIENT_SPEED = 1000 / 10;
 
@@ -18,6 +19,8 @@ export class BattleRoom extends Room<ClientState> {
     fsm = new FSM();
 
     logger = getRoomLogger("BATTLE", LogLevel.DEBUG);
+
+    waitingPlayers: Player[] = [];
 
     // When room is initialized
     async onCreate(options: any) {
@@ -43,8 +46,20 @@ export class BattleRoom extends Room<ClientState> {
         this.onMessage("identity", this.handleUserIdentity.bind(this));
 
         this.presence.subscribe(
+            PresenceMessages.PLAYERS_WAITING_BATTLE,
+            this.handlePlayerWaiting.bind(this),
+        );
+
+        this.presence.subscribe(
+            PresenceMessages.ROUND_COUNTDOWN,
+            this.handleRoundCountdown.bind(this),
+        );
+
+        this.presence.subscribe(
             PresenceMessages.BATTLE_PLAYERS,
             (players: Set<Player>) => {
+                this.state.players = new MapSchema<Player, string>();
+
                 players.forEach((p) => {
                     const player = new Player();
                     player.id = BattleRoom.playerIndex++;
@@ -61,7 +76,17 @@ export class BattleRoom extends Room<ClientState> {
                 this.startGame();
             },
         );
+    }
 
+    private handleRoundCountdown(countdown: number) {
+        this.logger.log("round countdown", countdown);
+        this.state.game.roundCountdown = countdown;
+    }
+
+    private handlePlayerWaiting(players: Queue<Player>) {
+        this.logger.log("add player to waiting battle", players);
+
+        this.waitingPlayers = players.toArray();
     }
 
     private handleUserIdentity(client: Client, data: string) {
@@ -95,7 +120,7 @@ export class BattleRoom extends Room<ClientState> {
             player.id = BattleRoom.playerIndex++;
             player.sessionId = client.sessionId;
             player.name = name;
-            player.avatar = avatar|| "1";
+            player.avatar = avatar || "1";
             player.pic = pic || "";
             player.sub = sub;
             player.connected = true;
@@ -128,7 +153,7 @@ export class BattleRoom extends Room<ClientState> {
         const stateChange = this.fsm.to(GameStates.GAME_ERROR);
 
         if (!stateChange) {
-            console.error("OMG something very wrong happended");
+            this.logger.log("OMG something very wrong happended");
         }
 
         this.state.game.status = GameStates.GAME_ERROR;
@@ -160,18 +185,31 @@ export class BattleRoom extends Room<ClientState> {
                     return;
                 }
                 const state: any = this.state.toJSON();
-                const players = Object.values(state.players);
-                state.players = players.map((p: any) => {
-                    return {
-                        ...p,
-                        conn: p.connected,
-                        position: {
-                            // trim psition to 1 decimal
-                            x: Math.round(p.position.x * 10) / 10,
-                            y: Math.round(p.position.y * 10) / 10,
-                        },
-                    };
-                });
+
+                state.game.remainingTime = Math.round(state.game.remainingTime);
+
+                if (
+                    this.state.game.status === GameStates.RUNNING || 
+                    this.state.game.status === GameStates.GAME_OVER
+                ) {
+                    const players = Object.values(state.players);
+                    state.players = players.map((p: any) => {
+                        return {
+                            ...p,
+                            conn: p.connected,
+                            position: {
+                                // trim psition to 1 decimal
+                                x: Math.round(p.position.x * 10) / 10,
+                                y: Math.round(p.position.y * 10) / 10,
+                            },
+                        };
+                    });
+                }
+
+                if (this.state.game.status === GameStates.WAITING_FOR_PLAYERS) {
+                    state.players = this.waitingPlayers;
+                }
+
                 Globals.viewerSocket.send(JSON.stringify(state));
             }, SERVER_TO_CLIENT_SPEED);
         }, 1000);
@@ -225,12 +263,11 @@ export class BattleRoom extends Room<ClientState> {
     }
 
     private changeStateToRunning(corePlayers: any[], remainingTime: number) {
-        this.state.game.time = +new Date();
         this.state.game.remainingTime = remainingTime;
 
         const stateChange = this.fsm.to(GameStates.RUNNING);
         if (!stateChange) {
-            console.error("OMG something very wrong happended");
+            this.logger.log("OMG something very wrong happended");
         }
 
         if (this.state.game.status !== GameStates.RUNNING) {
@@ -260,6 +297,12 @@ export class BattleRoom extends Room<ClientState> {
         });
     }
 
+    /**
+     * changeStateToRoundEnd.
+     *
+     * @param {any[]} corePlayers
+     * @param {number} remainingTime
+     */
     private changeStateToRoundEnd(corePlayers: any[], remainingTime: number) {
         if (!this.shouldHandleRoundEnd()) {
             return;
@@ -307,6 +350,8 @@ export class BattleRoom extends Room<ClientState> {
         this.broadcast("battle_start");
         this.presence.publish("battle_state", GameStates.RUNNING);
 
+        this.waitingPlayers = [];
+
         this.state.game.roundCountdown = 0;
 
         if (!(this.state.game.status === GameStates.RUNNING)) {
@@ -337,8 +382,7 @@ export class BattleRoom extends Room<ClientState> {
             let startGameMessage = `start|||`;
             let playersToSend = [];
             this.state.players.forEach((player) => {
-
-                const avatar = parseInt(player.avatar) || 1; 
+                const avatar = parseInt(player.avatar) || 1;
 
                 const startingPlayer = {
                     player_id: player.id,

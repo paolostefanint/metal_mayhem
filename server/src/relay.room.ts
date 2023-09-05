@@ -129,7 +129,7 @@ export class DropRelayRoom extends Room<RelayState> {
             this.waitingListMissingTime -= 1000;
             this.broadcast("timer", this.waitingListMissingTime);
             this.presence.publish(
-                "round_countdown",
+                PresenceMessages.ROUND_COUNTDOWN,
                 this.waitingListMissingTime / 1000,
             );
         }, 1000);
@@ -192,6 +192,12 @@ export class DropRelayRoom extends Room<RelayState> {
     }
 
     private broadcatsQueue() {
+        // send a message to presence channel
+        this.presence.publish(
+            PresenceMessages.PLAYERS_WAITING_BATTLE,
+            this.waitingPlayers,
+        );
+
         const toBroadcast = this.waitingPlayers
             .toArray()
             .map((p) => `${p.name}|${p.connected}|${p.avatar}|${p.pic}`);

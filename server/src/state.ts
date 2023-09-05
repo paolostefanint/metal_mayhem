@@ -3,7 +3,9 @@ import {GameStates} from "./fsm";
 
 export enum PresenceMessages {
     BATTLE_PLAYERS = "battle_players",
-    BATTLE_STATE = "battle_state"
+    BATTLE_STATE = "battle_state",
+    PLAYERS_WAITING_BATTLE = "players_waiting_battle",
+    ROUND_COUNTDOWN = "round_countdown",
 }
 
 export enum CoreStates {
@@ -38,7 +40,6 @@ export class Player extends Schema {
 
 export class GameState extends Schema {
     @type("string") status: GameStates = GameStates.GAME_OVER;
-    @type("number") time: number = 0;
     @type("number") remainingTime: number = 0;
     @type("number") roundCountdown: number = 0;
 }

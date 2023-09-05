@@ -1,7 +1,6 @@
 interface GlobalsContainer {
     GAME_WAITING_TIME: number;
     GAME_EXIT_TIME: number;
-    GAME_MAX_ROUNDS: number;
     MIN_PLAYERS_NUMBER: number;
     MAX_PLAYERS_NUMBER: number;
     viewerSocket: ViewerSocketWrapper;
@@ -39,9 +38,8 @@ export const Globals: GlobalsContainer = {
     // The time in ms to wait for players to exit the game
     GAME_EXIT_TIME: 5000,
 
-    // ALwAYS KKEP GAME_WAITING_TIME > GAME_EXIT_TIME
+    // ALWAYS KEEP GAME_WAITING_TIME > GAME_EXIT_TIME
 
-    GAME_MAX_ROUNDS: 300,
     // The number of players in the game
     MIN_PLAYERS_NUMBER: 1,
     MAX_PLAYERS_NUMBER: 8,

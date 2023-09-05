@@ -51,7 +51,8 @@ function drawTimer() {
 }
 
 function drawPlayer(player) {
-    fill(player.color);
+
+    fill(player.color || "white");
     noStroke();
     rect(player.position.x, player.position.y, 1, 0.5);
 
