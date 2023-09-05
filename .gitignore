@@ -1,1 +1,3 @@
 *.swp
+/unity_client/MetalMayhem
+/unity_client/MetalMayhem/build/
