@@ -207,7 +207,7 @@ export class BattleRoom extends Room<ClientState> {
                 }
 
                 if (this.state.game.status === GameStates.WAITING_FOR_PLAYERS) {
-                    state.players = this.waitingPlayers;
+                    state.players = this.waitingPlayers.slice(0, Globals.MAX_PLAYERS_NUMBER - 1);
                 }
 
                 Globals.viewerSocket.send(JSON.stringify(state));
