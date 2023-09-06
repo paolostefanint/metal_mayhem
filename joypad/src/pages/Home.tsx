@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "solid-app-router";
+import { Link, useNavigate } from "@solidjs/router";
 import logo from "../assets/logo.png";
 import { useAuthDispatch, useAuthState } from "../shared/context/auth.context";
 import { createEffect, onMount } from "solid-js";

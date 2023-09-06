@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { Routes, Route } from "solid-app-router";
+import { Routes, Route } from "@solidjs/router";
 import { lazy, onMount } from "solid-js";
 import { useAuthDispatch } from "./shared/context/auth.context";
 import ViewerProvider from "./shared/context/viewer.context";

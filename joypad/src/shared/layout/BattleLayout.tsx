@@ -1,4 +1,4 @@
-import {Outlet, useNavigate} from "solid-app-router";
+import {Outlet, useNavigate} from "@solidjs/router";
 import {onMount} from "solid-js";
 import {useAuthDispatch, useAuthState} from "../context/auth.context";
 import logo from "../../assets/logo.png";

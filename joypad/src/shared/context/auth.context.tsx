@@ -9,7 +9,7 @@ import createAuth0Client, { Auth0Client, User } from "@auth0/auth0-spa-js";
 import authConfig from "../auth.config";
 import { AUTH_REDIRECT_URI } from "../constants";
 import { createStore } from "solid-js/store";
-import { useNavigate } from "solid-app-router";
+import { useNavigate } from "@solidjs/router";
 import LoginLoader from "../components/LoginLoader";
 
 interface AuthDispatchContext {
